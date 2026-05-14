@@ -3,7 +3,7 @@ import {Genre, Movie, TMDBPaginatedResponse} from "./TMDBTypes";
 /**
  * Objet client représente l'api TMDB
  */
-class TMDBClient {
+export class TMDBClient {
     private readonly apiKey: string;
     private baseUrl: string = "https://api.themoviedb.org/3/";
 
