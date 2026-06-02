@@ -71,11 +71,11 @@ export class TMDBClient {
         let page: number = 1;
 
         while (movies.length < count) {
-            const data: TMDBPaginatedResponse<Movie> = await this.getPopularPage(page);
+            const pageResponse: TMDBPaginatedResponse<Movie> = await this.getPopularPage(page);
 
-            movies.push(...data.results);
+            movies.push(...pageResponse.results);
 
-            if (page >= data.total_pages) {
+            if (page >= pageResponse.total_pages) {
                 break;
             }
 
@@ -109,11 +109,11 @@ export class TMDBClient {
         page = 1
     ): Promise<TMDBPaginatedResponse<Movie>> {
 
-        const genres =
+        const genreIdsParam =
             genreIds.join(",");
 
         return this.request(
-            `/discover/movie?with_genres=${genres}&page=${page}&sort_by=popularity.desc&language=fr-FR`
+            `/discover/movie?with_genres=${genreIdsParam}&page=${page}&sort_by=popularity.desc&language=fr-FR`
         );
     }
 
@@ -133,15 +133,15 @@ export class TMDBClient {
 
         while (movies.length < count) {
 
-            const data =
+            const pageResponse =
                 await this.discoverMoviesByGenres(
                     genreIds,
                     page
                 );
 
-            movies.push(...data.results);
+            movies.push(...pageResponse.results);
 
-            if (page >= data.total_pages) {
+            if (page >= pageResponse.total_pages) {
                 break;
             }
 

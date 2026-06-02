@@ -38,20 +38,20 @@ function createErrorResponse(statusText = "Unauthorized"): MockResponse {
 }
 
 function installFetchMock(...responses: MockResponse[]) {
-  let index = 0;
+  let responseIndex = 0;
 
   global.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     fetchCalls.push({ input, init });
 
-    const response = responses[index];
+    const currentResponse = responses[responseIndex];
 
-    if (!response) {
-      throw new Error(`Unexpected fetch call #${index + 1}`);
+    if (!currentResponse) {
+      throw new Error(`Unexpected fetch call #${responseIndex + 1}`);
     }
 
-    index += 1;
+    responseIndex += 1;
 
-    return response as unknown as Response;
+    return currentResponse as unknown as Response;
   }) as typeof fetch;
 }
 
