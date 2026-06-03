@@ -46,3 +46,5 @@ app-example
 /android
 
 .env
+# Claude Code
+CLAUDE.md
