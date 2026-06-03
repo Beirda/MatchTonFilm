@@ -8,7 +8,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test:wrapper:build": "tsc -p tsconfig.test.json",
+    "test:wrapper": "npm run test:wrapper:build && node --test .test-dist/tests/TMDBWrappers.test.js",
+    "test:wrapper:coverage": "npm run test:wrapper:build && node --test --experimental-test-coverage --test-coverage-include=.test-dist/wrappers/TMDBWrappers.js .test-dist/tests/TMDBWrappers.test.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

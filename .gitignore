@@ -33,6 +33,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# compiled test output
+.test-dist/
+
 # typescript
 *.tsbuildinfo
 
@@ -42,5 +45,6 @@ app-example
 /ios
 /android
 
+.env
 # Claude Code
 CLAUDE.md
