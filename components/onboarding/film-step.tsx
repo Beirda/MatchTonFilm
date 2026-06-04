@@ -70,17 +70,28 @@ export default function FilmStep({ genres, selected, onToggle }: Props) {
 
   const isSelected = (id: number) => selected.some(f => f.tmdbId === id);
 
+  /** Convertit un objet TMDB `Movie` en `FilmPreference` stockable. */
   function toPreference(movie: Movie): FilmPreference {
     return { tmdbId: movie.id, title: movie.title, posterPath: movie.poster_path };
   }
 
+  /**
+   * Sélectionne ou désélectionne un film.
+   *
+   * À la sélection, récupère `SIMILAR_COUNT` films similaires via TMDB et les
+   * insère juste après le film cliqué dans `displayList`. Ce comportement est
+   * récursif : chaque film similaire peut à son tour déclencher une nouvelle
+   * injection lorsqu'il est sélectionné.
+   *
+   * À la déselection, les films similaires déjà injectés restent visibles.
+   */
   async function handleToggle(movie: Movie) {
     onToggle(toPreference(movie));
 
     // Déselection : on garde les similaires déjà injectés, on ne fait rien de plus
     if (isSelected(movie.id)) return;
 
-    // Sélection : injecter 3 similaires juste après ce film dans displayList
+    // Sélection : injecter SIMILAR_COUNT similaires juste après ce film dans displayList
     setLoadingId(movie.id);
     try {
       const res = await tmdb.getSimilar(movie.id);

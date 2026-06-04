@@ -37,6 +37,7 @@ export default function OnboardingScreen() {
         ? selectedFilms.length >= MIN_FILMS
         : true;
 
+  /** Ajoute ou retire un genre de la sélection. */
   function toggleGenre(genre: GenrePreference) {
     setSelectedGenres(prev =>
       prev.some(g => g.id === genre.id)
@@ -45,6 +46,7 @@ export default function OnboardingScreen() {
     );
   }
 
+  /** Ajoute ou retire un film de la sélection. */
   function toggleFilm(film: FilmPreference) {
     setSelectedFilms(prev =>
       prev.some(f => f.tmdbId === film.tmdbId)
@@ -53,6 +55,10 @@ export default function OnboardingScreen() {
     );
   }
 
+  /**
+   * Avance à l'étape suivante ou, à la dernière étape, sauvegarde les
+   * préférences via `saveUserPreferences` et navigue vers les groupes.
+   */
   async function handleContinue() {
     if (step < STEPS.length - 1) {
       setStep(s => s + 1);
