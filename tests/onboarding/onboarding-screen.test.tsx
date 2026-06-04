@@ -7,6 +7,16 @@ jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }));
 jest.mock('@/services/preferences', () => ({
   saveUserPreferences: jest.fn().mockResolvedValue(undefined),
 }));
+// FilmStep s'appuie sur tmdb — on stub tous les appels pour éviter des appels
+// réseau réels (et des rejections non gérées) quand onboarding-screen navigue vers l'étape films.
+jest.mock('@/lib/tmdb', () => ({
+  tmdb: {
+    getMoviesByGenres: jest.fn().mockResolvedValue([]),
+    getPopularMovies: jest.fn().mockResolvedValue([]),
+    searchMovie: jest.fn().mockResolvedValue({ results: [] }),
+    getSimilar: jest.fn().mockResolvedValue({ results: [] }),
+  },
+}));
 
 describe('OnboardingScreen', () => {
   it('démarre sur l\'étape des genres', () => {
