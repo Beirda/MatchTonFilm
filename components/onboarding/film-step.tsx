@@ -53,6 +53,8 @@ export default function FilmStep({ genres, selected, onToggle }: Props) {
       ? tmdb.getMoviesByGenres(genreIds, INITIAL_COUNT)
       : tmdb.getPopularMovies(INITIAL_COUNT);
     fetch.then(setDisplayList).finally(() => setLoading(false));
+  // genres est stable au montage de cette étape — on lit sa valeur initiale uniquement
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

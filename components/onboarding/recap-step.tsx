@@ -23,7 +23,7 @@ export default function RecapStep({ genres, films }: Props) {
           <ThemedText style={styles.eyebrow}>Étape 3 / 3</ThemedText>
           <ThemedText type="title" style={styles.title}>Tout est prêt ✓</ThemedText>
           <ThemedText style={styles.subtitle}>
-            On a ce qu'il faut pour te proposer les bons films.
+            {`On a ce qu'il faut pour te proposer les bons films.`}
           </ThemedText>
         </View>
 
