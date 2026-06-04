@@ -50,19 +50,22 @@ describe('FilmStep', () => {
     jest.requireMock('@/lib/tmdb').tmdb.getSimilar.mockClear();
   });
 
-  it('affiche les films après chargement', async () => {
-    const { findByText } = render(
+  // Les Pressable ont accessible={true} + accessibilityLabel={title} :
+  // RNTL les traite comme des feuilles accessibles -> findByLabelText, pas findByText.
+
+  it('affiche les films apres chargement', async () => {
+    const { findByLabelText } = render(
       <FilmStep genres={mockGenres} selected={[]} onToggle={mockOnToggle} />
     );
-    expect(await findByText('Dune')).toBeTruthy();
-    expect(await findByText('Parasite')).toBeTruthy();
+    expect(await findByLabelText('Dune')).toBeTruthy();
+    expect(await findByLabelText('Parasite')).toBeTruthy();
   });
 
   it('appelle onToggle avec la bonne FilmPreference au tap', async () => {
-    const { findByText } = render(
+    const { findByLabelText } = render(
       <FilmStep genres={mockGenres} selected={[]} onToggle={mockOnToggle} />
     );
-    fireEvent.press(await findByText('Dune'));
+    fireEvent.press(await findByLabelText('Dune'));
     await waitFor(() =>
       expect(mockOnToggle).toHaveBeenCalledWith({
         tmdbId: 1,
@@ -72,22 +75,22 @@ describe('FilmStep', () => {
     );
   });
 
-  it('appelle getSimilar après sélection d\'un film', async () => {
+  it('appelle getSimilar apres selection d un film', async () => {
     const { tmdb } = jest.requireMock('@/lib/tmdb');
-    const { findByText } = render(
+    const { findByLabelText } = render(
       <FilmStep genres={mockGenres} selected={[]} onToggle={mockOnToggle} />
     );
-    fireEvent.press(await findByText('Dune'));
+    fireEvent.press(await findByLabelText('Dune'));
     await waitFor(() => expect(tmdb.getSimilar).toHaveBeenCalledWith(1));
   });
 
-  it('ne rappelle pas getSimilar lors d\'une désélection', async () => {
+  it('ne rappelle pas getSimilar lors d une deselection', async () => {
     const { tmdb } = jest.requireMock('@/lib/tmdb');
     const selected = [{ tmdbId: 1, title: 'Dune', posterPath: '/dune.jpg' }];
-    const { findByText } = render(
+    const { findByLabelText } = render(
       <FilmStep genres={mockGenres} selected={selected} onToggle={mockOnToggle} />
     );
-    fireEvent.press(await findByText('Dune'));
+    fireEvent.press(await findByLabelText('Dune'));
     await waitFor(() => expect(tmdb.getSimilar).not.toHaveBeenCalled());
   });
 });
