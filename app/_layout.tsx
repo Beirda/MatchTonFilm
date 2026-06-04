@@ -1,23 +1,16 @@
-import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
-  // TODO GH-2 : repasser à '(tabs)' et implémenter la vraie gate d'auth
-  anchor: 'onboarding',
+  anchor: '(tabs)',
 };
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-
-  // TODO GH-2 : remplacer par hasCompletedOnboarding() depuis Supabase
-  useEffect(() => {
-    router.replace('/onboarding');
-  }, []);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
