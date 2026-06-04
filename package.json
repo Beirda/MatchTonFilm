@@ -9,9 +9,20 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test": "jest --watchAll=false",
     "test:wrapper:build": "tsc -p tsconfig.test.json",
     "test:wrapper": "npm run test:wrapper:build && node --test .test-dist/tests/TMDBWrappers.test.js",
     "test:wrapper:coverage": "npm run test:wrapper:build && node --test --experimental-test-coverage --test-coverage-include=.test-dist/wrappers/TMDBWrappers.js .test-dist/tests/TMDBWrappers.test.js"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    },
+    "testPathIgnorePatterns": ["/node_modules/", "TMDBWrappers"],
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@react-navigation/.*|react-native-safe-area-context)"
+    ]
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -41,10 +52,15 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
+    "@testing-library/react-native": "^13.3.3",
+    "@types/jest": "^29.5.14",
     "@types/react": "~19.1.0",
-    "typescript": "~5.9.2",
+    "babel-jest": "^29.7.0",
     "eslint": "^9.25.0",
-    "eslint-config-expo": "~10.0.0"
+    "eslint-config-expo": "~10.0.0",
+    "jest": "^29.7.0",
+    "jest-expo": "^54.0.17",
+    "typescript": "~5.9.2"
   },
   "private": true
 }
