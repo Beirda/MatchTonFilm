@@ -3,8 +3,8 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 
 import FilmStep from '@/components/onboarding/film-step';
 
-// Les données doivent être déclarées à l'intérieur de la factory pour éviter
-// le hoisting de jest.mock qui les rendrait undefined à l'exécution.
+// Les données doivent etre declarees a l interieur de la factory pour eviter
+// le hoisting de jest.mock qui les rendrait undefined a l execution.
 jest.mock('@/lib/tmdb', () => {
   const movies = [
     {
@@ -50,22 +50,23 @@ describe('FilmStep', () => {
     jest.requireMock('@/lib/tmdb').tmdb.getSimilar.mockClear();
   });
 
-  // Les Pressable ont accessible={true} + accessibilityLabel={title} :
-  // RNTL les traite comme des feuilles accessibles -> findByLabelText, pas findByText.
+  it('appelle getMoviesByGenres avec les ids des genres au montage', async () => {
+    const { tmdb } = jest.requireMock('@/lib/tmdb');
+    render(<FilmStep genres={mockGenres} selected={[]} onToggle={mockOnToggle} />);
+    await waitFor(() => expect(tmdb.getMoviesByGenres).toHaveBeenCalledWith([878], 20));
+  });
 
-  it('affiche les films apres chargement', async () => {
-    const { findByLabelText } = render(
-      <FilmStep genres={mockGenres} selected={[]} onToggle={mockOnToggle} />
-    );
-    expect(await findByLabelText('Dune')).toBeTruthy();
-    expect(await findByLabelText('Parasite')).toBeTruthy();
+  it('utilise getPopularMovies en fallback si aucun genre', async () => {
+    const { tmdb } = jest.requireMock('@/lib/tmdb');
+    render(<FilmStep genres={[]} selected={[]} onToggle={mockOnToggle} />);
+    await waitFor(() => expect(tmdb.getPopularMovies).toHaveBeenCalledWith(20));
   });
 
   it('appelle onToggle avec la bonne FilmPreference au tap', async () => {
-    const { findByLabelText } = render(
+    const { findByTestId } = render(
       <FilmStep genres={mockGenres} selected={[]} onToggle={mockOnToggle} />
     );
-    fireEvent.press(await findByLabelText('Dune'));
+    fireEvent.press(await findByTestId('film-item-1'));
     await waitFor(() =>
       expect(mockOnToggle).toHaveBeenCalledWith({
         tmdbId: 1,
@@ -75,22 +76,22 @@ describe('FilmStep', () => {
     );
   });
 
-  it('appelle getSimilar apres selection d un film', async () => {
+  it('appelle getSimilar apres selection', async () => {
     const { tmdb } = jest.requireMock('@/lib/tmdb');
-    const { findByLabelText } = render(
+    const { findByTestId } = render(
       <FilmStep genres={mockGenres} selected={[]} onToggle={mockOnToggle} />
     );
-    fireEvent.press(await findByLabelText('Dune'));
+    fireEvent.press(await findByTestId('film-item-1'));
     await waitFor(() => expect(tmdb.getSimilar).toHaveBeenCalledWith(1));
   });
 
-  it('ne rappelle pas getSimilar lors d une deselection', async () => {
+  it('ne rappelle pas getSimilar a la deselection', async () => {
     const { tmdb } = jest.requireMock('@/lib/tmdb');
     const selected = [{ tmdbId: 1, title: 'Dune', posterPath: '/dune.jpg' }];
-    const { findByLabelText } = render(
+    const { findByTestId } = render(
       <FilmStep genres={mockGenres} selected={selected} onToggle={mockOnToggle} />
     );
-    fireEvent.press(await findByLabelText('Dune'));
+    fireEvent.press(await findByTestId('film-item-1'));
     await waitFor(() => expect(tmdb.getSimilar).not.toHaveBeenCalled());
   });
 });

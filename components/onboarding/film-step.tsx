@@ -180,6 +180,7 @@ export default function FilmStep({ genres, selected, onToggle }: Props) {
             const fetching = loadingId === item.id;
             return (
               <Pressable
+                testID={`film-item-${item.id}`}
                 style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
                 onPress={() => handleToggle(item)}
                 disabled={fetching}
