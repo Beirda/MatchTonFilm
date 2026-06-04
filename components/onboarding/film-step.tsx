@@ -21,6 +21,7 @@ import { tmdb } from '@/lib/tmdb';
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
 const INITIAL_COUNT = 20;
+const SIMILAR_COUNT = 3;
 const H_PAD = 22;
 const COL_GAP = 10;
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -36,37 +37,33 @@ export default function FilmStep({ selected, onToggle }: Props) {
   const colors = Colors[colorScheme];
   const styles = makeStyles(colors, colorScheme);
 
-  const [popular, setPopular] = useState<Movie[]>([]);
+  // Liste ordonnée affichée — les films similaires s'y injectent à la volée
+  const [displayList, setDisplayList] = useState<Movie[]>([]);
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
+  const [loadingId, setLoadingId] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     tmdb
       .getPopularMovies(INITIAL_COUNT)
-      .then(setPopular)
+      .then(setDisplayList)
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
     const q = query.trim();
-    if (!q) {
-      setSearchResults([]);
-      setSearching(false);
-      return;
-    }
+    if (!q) { setSearchResults([]); setSearching(false); return; }
     setSearching(true);
     timer.current = setTimeout(async () => {
       const res = await tmdb.searchMovie(q);
       setSearchResults(res.results);
       setSearching(false);
     }, 400);
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
+    return () => { if (timer.current) clearTimeout(timer.current); };
   }, [query]);
 
   const isSelected = (id: number) => selected.some(f => f.tmdbId === id);
@@ -75,7 +72,37 @@ export default function FilmStep({ selected, onToggle }: Props) {
     return { tmdbId: movie.id, title: movie.title, posterPath: movie.poster_path };
   }
 
-  const displayMovies = query.trim() ? searchResults : popular;
+  async function handleToggle(movie: Movie) {
+    onToggle(toPreference(movie));
+
+    // Déselection : on garde les similaires déjà injectés, on ne fait rien de plus
+    if (isSelected(movie.id)) return;
+
+    // Sélection : injecter 3 similaires juste après ce film dans displayList
+    setLoadingId(movie.id);
+    try {
+      const res = await tmdb.getSimilar(movie.id);
+      setDisplayList(prev => {
+        const toInject = res.results
+          .filter(m => !prev.some(d => d.id === m.id))
+          .slice(0, SIMILAR_COUNT);
+        if (toInject.length === 0) return prev;
+
+        const idx = prev.findIndex(m => m.id === movie.id);
+        const next = [...prev];
+        if (idx === -1) {
+          // Film sélectionné depuis la recherche → ajouter en fin de liste
+          return [...next, movie, ...toInject];
+        }
+        next.splice(idx + 1, 0, ...toInject);
+        return next;
+      });
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
+  const displayMovies = query.trim() ? searchResults : displayList;
 
   return (
     <KeyboardAvoidingView
@@ -135,10 +162,12 @@ export default function FilmStep({ selected, onToggle }: Props) {
           }
           renderItem={({ item }) => {
             const on = isSelected(item.id);
+            const fetching = loadingId === item.id;
             return (
               <Pressable
                 style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
-                onPress={() => onToggle(toPreference(item))}
+                onPress={() => handleToggle(item)}
+                disabled={fetching}
               >
                 <View style={[styles.posterWrap, on && styles.posterWrapSelected]}>
                   {item.poster_path ? (
@@ -150,9 +179,14 @@ export default function FilmStep({ selected, onToggle }: Props) {
                   ) : (
                     <View style={[styles.poster, styles.posterPlaceholder]} />
                   )}
-                  {on && (
+                  {on && !fetching && (
                     <View style={styles.checkOverlay}>
                       <ThemedText style={styles.checkText}>✓</ThemedText>
+                    </View>
+                  )}
+                  {fetching && (
+                    <View style={styles.fetchingOverlay}>
+                      <ActivityIndicator color="#fff" size="small" />
                     </View>
                   )}
                 </View>
@@ -223,9 +257,7 @@ function makeStyles(
       elevation: 6,
     },
     poster: { flex: 1 },
-    posterPlaceholder: {
-      backgroundColor: isDark ? colors.surface3 : colors.surface2,
-    },
+    posterPlaceholder: { backgroundColor: isDark ? colors.surface3 : colors.surface2 },
     checkOverlay: {
       position: 'absolute',
       top: 6,
@@ -238,17 +270,13 @@ function makeStyles(
       justifyContent: 'center',
     },
     checkText: { color: '#fff', fontSize: 13, fontWeight: '800', lineHeight: 16 },
-    movieTitle: {
-      fontSize: 11,
-      color: colors.textMuted,
-      marginTop: 5,
-      lineHeight: 14,
+    fetchingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    emptyText: {
-      color: colors.textFaint,
-      fontSize: 14,
-      textAlign: 'center',
-      paddingTop: 30,
-    },
+    movieTitle: { fontSize: 11, color: colors.textMuted, marginTop: 5, lineHeight: 14 },
+    emptyText: { color: colors.textFaint, fontSize: 14, textAlign: 'center', paddingTop: 30 },
   });
 }
