@@ -6,7 +6,8 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  // TODO GH-2 : repasser à '(tabs)' et implémenter la vraie gate d'auth
+  anchor: 'onboarding',
 };
 
 export default function RootLayout() {
@@ -14,9 +15,8 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+      <Stack initialRouteName="onboarding">
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        {/* TODO GH-2 : rediriger ici après inscription si hasCompletedOnboarding() === false */}
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
