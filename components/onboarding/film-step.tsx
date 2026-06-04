@@ -181,6 +181,9 @@ export default function FilmStep({ genres, selected, onToggle }: Props) {
                 style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
                 onPress={() => handleToggle(item)}
                 disabled={fetching}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: on, busy: fetching }}
+                accessibilityLabel={item.title}
               >
                 <View style={[styles.posterWrap, on && styles.posterWrapSelected]}>
                   {item.poster_path ? (

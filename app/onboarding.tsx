@@ -94,7 +94,8 @@ export default function OnboardingScreen() {
           style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
           onPress={handleBack}
           disabled={step === 0}
-          accessibilityLabel="Retour"
+          accessibilityLabel="Retour à l'étape précédente"
+          accessibilityRole="button"
         >
           <ThemedText style={[styles.backChevron, step === 0 && styles.invisible]}>‹</ThemedText>
         </Pressable>
@@ -132,6 +133,8 @@ export default function OnboardingScreen() {
           ]}
           onPress={handleContinue}
           disabled={!canContinue || saving}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !canContinue || saving }}
         >
           <ThemedText style={styles.continueBtnText}>
             {saving
@@ -173,8 +176,8 @@ function makeStyles(
       borderRadius: 4,
       backgroundColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)',
     },
-    dotActive: { backgroundColor: colors.red },
-    dotCurrent: { width: 22 },
+    dotActive: { backgroundColor: colors.red, opacity: 0.5 },
+    dotCurrent: { width: 22, opacity: 1 },
     footer: { paddingHorizontal: 22, paddingBottom: 12 },
     continueBtn: {
       backgroundColor: colors.tint,

@@ -62,6 +62,9 @@ export default function GenreStep({ selected, onToggle }: Props) {
               pressed && styles.chipPressed,
             ]}
             onPress={() => onToggle(genre)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: isSelected(genre.id) }}
+            accessibilityLabel={genre.name}
           >
             <ThemedText style={[styles.chipText, isSelected(genre.id) && styles.chipTextSelected]}>
               {genre.name}
