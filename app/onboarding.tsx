@@ -110,7 +110,7 @@ export default function OnboardingScreen() {
         <GenreStep selected={selectedGenres} onToggle={toggleGenre} />
       )}
       {currentStep === 'films' && (
-        <FilmStep selected={selectedFilms} onToggle={toggleFilm} />
+        <FilmStep genres={selectedGenres} selected={selectedFilms} onToggle={toggleFilm} />
       )}
       {currentStep === 'recap' && (
         <RecapStep genres={selectedGenres} films={selectedFilms} />

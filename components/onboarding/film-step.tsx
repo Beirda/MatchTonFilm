@@ -15,7 +15,7 @@ import { Image } from 'expo-image';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ThemedText } from '@/components/themed-text';
-import type { FilmPreference } from '@/types/preferences';
+import type { FilmPreference, GenrePreference } from '@/types/preferences';
 import type { Movie } from '@/wrappers/TMDBTypes';
 import { tmdb } from '@/lib/tmdb';
 
@@ -28,11 +28,12 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const ITEM_W = (SCREEN_W - H_PAD * 2 - COL_GAP * 2) / 3;
 
 type Props = Readonly<{
+  genres: GenrePreference[];
   selected: FilmPreference[];
   onToggle: (film: FilmPreference) => void;
 }>;
 
-export default function FilmStep({ selected, onToggle }: Props) {
+export default function FilmStep({ genres, selected, onToggle }: Props) {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
   const styles = makeStyles(colors, colorScheme);
@@ -47,10 +48,11 @@ export default function FilmStep({ selected, onToggle }: Props) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    tmdb
-      .getPopularMovies(INITIAL_COUNT)
-      .then(setDisplayList)
-      .finally(() => setLoading(false));
+    const genreIds = genres.map(g => g.id);
+    const fetch = genreIds.length > 0
+      ? tmdb.getMoviesByGenres(genreIds, INITIAL_COUNT)
+      : tmdb.getPopularMovies(INITIAL_COUNT);
+    fetch.then(setDisplayList).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
