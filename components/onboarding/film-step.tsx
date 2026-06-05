@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -9,6 +8,7 @@ import {
   StyleSheet,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -24,8 +24,6 @@ const INITIAL_COUNT = 20;
 const SIMILAR_COUNT = 3;
 const H_PAD = 22;
 const COL_GAP = 10;
-const { width: SCREEN_W } = Dimensions.get('window');
-const ITEM_W = (SCREEN_W - H_PAD * 2 - COL_GAP * 2) / 3;
 
 type Props = Readonly<{
   genres: GenrePreference[];
@@ -36,23 +34,33 @@ type Props = Readonly<{
 export default function FilmStep({ genres, selected, onToggle }: Props) {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
-  const styles = makeStyles(colors, colorScheme);
+  // useWindowDimensions réagit aux rotations et aux fenêtres redimensionnées (tablette/web)
+  const { width: screenW } = useWindowDimensions();
+  const itemW = (screenW - H_PAD * 2 - COL_GAP * 2) / 3;
+  const styles = makeStyles(colors, colorScheme, itemW);
 
   // Liste ordonnée affichée — les films similaires s'y injectent à la volée
   const [displayList, setDisplayList] = useState<Movie[]>([]);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Évite les setState sur un composant démonté si une requête est en vol
+  const isMounted = useRef(true);
+  useEffect(() => () => { isMounted.current = false; }, []);
 
   useEffect(() => {
     const genreIds = genres.map(g => g.id);
     const fetch = genreIds.length > 0
       ? tmdb.getMoviesByGenres(genreIds, INITIAL_COUNT)
       : tmdb.getPopularMovies(INITIAL_COUNT);
-    fetch.then(setDisplayList).finally(() => setLoading(false));
+    fetch
+      .then(setDisplayList)
+      .catch(() => setFetchError('Impossible de charger les films.'))
+      .finally(() => setLoading(false));
   // genres est stable au montage de cette étape — on lit sa valeur initiale uniquement
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -64,6 +72,7 @@ export default function FilmStep({ genres, selected, onToggle }: Props) {
     setSearching(true);
     timer.current = setTimeout(async () => {
       const res = await tmdb.searchMovie(q);
+      if (!isMounted.current) return;
       setSearchResults(res.results);
       setSearching(false);
     }, 400);
@@ -154,6 +163,10 @@ export default function FilmStep({ genres, selected, onToggle }: Props) {
         <View style={styles.center}>
           <ActivityIndicator color={colors.red} size="large" />
         </View>
+      ) : fetchError ? (
+        <View style={styles.center}>
+          <ThemedText style={styles.emptyText}>{fetchError}</ThemedText>
+        </View>
       ) : searching ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.red} />
@@ -223,7 +236,8 @@ export default function FilmStep({ genres, selected, onToggle }: Props) {
 
 function makeStyles(
   colors: typeof Colors['light'] | typeof Colors['dark'],
-  scheme: 'light' | 'dark'
+  scheme: 'light' | 'dark',
+  itemW: number,
 ) {
   const isDark = scheme === 'dark';
   return StyleSheet.create({
@@ -257,10 +271,10 @@ function makeStyles(
     list: { flex: 1 },
     grid: { paddingHorizontal: H_PAD, paddingBottom: 16, gap: COL_GAP },
     row: { gap: COL_GAP },
-    item: { width: ITEM_W },
+    item: { width: itemW },
     itemPressed: { opacity: 0.8 },
     posterWrap: {
-      width: ITEM_W,
+      width: itemW,
       aspectRatio: 2 / 3,
       borderRadius: 12,
       overflow: 'hidden',

@@ -70,7 +70,7 @@ function makeStyles(
   scheme: 'light' | 'dark'
 ) {
   const isDark = scheme === 'dark';
-  const cardBg = isDark ? colors.surface : colors.surface;
+  const cardBg = isDark ? colors.surface2 : colors.surface;
   const borderColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)';
   return StyleSheet.create({
     root: { flex: 1 },

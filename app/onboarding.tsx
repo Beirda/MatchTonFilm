@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,6 +22,9 @@ export default function OnboardingScreen() {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
   const styles = makeStyles(colors, colorScheme);
+
+  // TODO GH-2 : remplacer par useSession() Supabase quand auth disponible
+  const userId: string | null = null;
 
   const [step, setStep] = useState<number>(0);
   const [selectedGenres, setSelectedGenres] = useState<GenrePreference[]>([]);
@@ -58,20 +61,26 @@ export default function OnboardingScreen() {
   /**
    * Avance à l'étape suivante ou, à la dernière étape, sauvegarde les
    * préférences via `saveUserPreferences` et navigue vers les groupes.
+   *
+   * Si `userId` est `null` (Supabase non connecté), la navigation s'effectue
+   * sans persistance pour ne pas écraser une future ligne inconnue.
    */
   async function handleContinue() {
     if (step < STEPS.length - 1) {
       setStep(s => s + 1);
       return;
     }
-    // Dernière étape : sauvegarder et naviguer
+    // Dernière étape — guard : Supabase pas encore disponible
+    if (userId === null) {
+      router.replace('/(tabs)');
+      return;
+    }
     setSaving(true);
     try {
-      // TODO GH-2 : récupérer le vrai userId depuis la session Supabase
-      await saveUserPreferences({ userId: 'todo-user-id', genres: selectedGenres, films: selectedFilms });
+      await saveUserPreferences({ userId, genres: selectedGenres, films: selectedFilms });
       router.replace('/(tabs)');
     } catch {
-      // TODO GH-2 : afficher une erreur à l'utilisateur
+      Alert.alert('Erreur', 'Impossible de sauvegarder tes préférences.');
     } finally {
       setSaving(false);
     }
