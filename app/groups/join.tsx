@@ -65,8 +65,7 @@ export default function JoinGroupScreen() {
     if (!isFull || loading) return;
     setLoading(true);
     try {
-      const fullCode = code.join('');
-      // TODO GH-4: const { data, error } = await supabase.from('groups').select('id').eq('invite_code', fullCode).single()
+      // TODO GH-4: const { data, error } = await supabase.from('groups').select('id').eq('invite_code', code.join('')).single()
       // TODO GH-4: if (error) throw error; router.replace(`/groups/${data.id}`)
       router.back();
     } catch {
