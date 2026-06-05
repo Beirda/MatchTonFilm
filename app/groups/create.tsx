@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -24,6 +25,7 @@ const LANGUAGES: Language[] = ['VF', 'VOSTFR', 'VF + VOSTFR'];
 export default function CreateGroupScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   const styles = makeStyles(colors, colorScheme);
 
   const [form, setForm] = useState<GroupForm>({
@@ -65,6 +67,16 @@ export default function CreateGroupScreen() {
     setLoading(false);
   }
 
+  const codeCardShadow = inviteCode
+    ? {
+        shadowColor: colors.red,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: isDark ? 0.35 : 0.18,
+        shadowRadius: 12,
+        elevation: 6,
+      }
+    : {};
+
   return (
     <KeyboardAvoidingView
       style={styles.root}
@@ -73,15 +85,12 @@ export default function CreateGroupScreen() {
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
+        {/* Nom */}
         <View style={styles.field}>
           <Text style={styles.label}>Nom du groupe</Text>
-          <View
-            style={[
-              styles.inputWrapper,
-              focusedField === 'name' && styles.inputWrapperFocused,
-            ]}
-          >
+          <View style={[styles.inputWrapper, focusedField === 'name' && styles.inputWrapperFocused]}>
             <TextInput
               style={styles.input}
               placeholder="Soirée pizza-ciné 🍕"
@@ -90,32 +99,44 @@ export default function CreateGroupScreen() {
               onChangeText={name => setForm(f => ({ ...f, name }))}
               onFocus={() => setFocusedField('name')}
               onBlur={() => setFocusedField(null)}
+              returnKeyType="done"
+              autoFocus
             />
           </View>
         </View>
 
-        <View style={[styles.field, { marginTop: 18 }]}>
+        <View style={styles.divider} />
+
+        {/* Genres */}
+        <View style={styles.field}>
           <Text style={styles.label}>Genres autorisés</Text>
           <View style={styles.chipRow}>
-            {GENRES.slice(0, 10).map(g => (
-              <Pressable
-                key={g}
-                style={({ pressed }) => [
-                  styles.chip,
-                  form.genres.includes(g) && styles.chipOn,
-                  pressed && styles.chipPressed,
-                ]}
-                onPress={() => toggleGenre(g)}
-              >
-                <Text style={[styles.chipText, form.genres.includes(g) && styles.chipTextOn]}>
-                  {g}
-                </Text>
-              </Pressable>
-            ))}
+            {GENRES.slice(0, 10).map(g => {
+              const active = form.genres.includes(g);
+              return (
+                <Pressable
+                  key={g}
+                  style={({ pressed }) => [
+                    styles.chip,
+                    active && styles.chipOn,
+                    pressed && styles.chipPressed,
+                  ]}
+                  onPress={() => toggleGenre(g)}
+                >
+                  {active && (
+                    <MaterialIcons name="check" size={13} color="#fff" style={{ marginRight: 3 }} />
+                  )}
+                  <Text style={[styles.chipText, active && styles.chipTextOn]}>{g}</Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
-        <View style={[styles.field, { marginTop: 18 }]}>
+        <View style={styles.divider} />
+
+        {/* Classification d'âge */}
+        <View style={styles.field}>
           <Text style={styles.label}>Classification d&apos;âge</Text>
           <View style={styles.segmented}>
             {AGE_RATINGS.map(a => (
@@ -136,7 +157,10 @@ export default function CreateGroupScreen() {
           </View>
         </View>
 
-        <View style={[styles.field, { marginTop: 18 }]}>
+        <View style={styles.divider} />
+
+        {/* Langue */}
+        <View style={styles.field}>
           <Text style={styles.label}>Langue</Text>
           <View style={styles.segmented}>
             {LANGUAGES.map(l => (
@@ -157,10 +181,12 @@ export default function CreateGroupScreen() {
           </View>
         </View>
 
+        {/* Bloc invitation */}
         <View
           style={[
             styles.surface,
-            { marginTop: 22, borderColor: inviteCode ? colors.redLine : colors.surfaceBorder2 },
+            { borderColor: inviteCode ? colors.redLine : colors.surfaceBorder2 },
+            codeCardShadow,
           ]}
         >
           {!inviteCode ? (
@@ -184,7 +210,7 @@ export default function CreateGroupScreen() {
                 <Pressable
                   style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
                   onPress={() => {
-                    // TODO GH-4: expo-clipboard once installed
+                    // TODO GH-4: expo-clipboard once installed — npx expo install expo-clipboard
                   }}
                 >
                   <MaterialIcons name="content-copy" size={18} color={colors.text} />
@@ -202,17 +228,22 @@ export default function CreateGroupScreen() {
         </View>
       </ScrollView>
 
+      {/* CTA */}
       <View style={styles.footer}>
         <Pressable
           style={({ pressed }) => [
             styles.primaryBtn,
             (!form.name || loading) && styles.primaryBtnDisabled,
-            pressed && !!form.name && styles.primaryBtnPressed,
+            pressed && !!form.name && !loading && styles.primaryBtnPressed,
           ]}
           onPress={handleSubmit}
           disabled={!form.name || loading}
         >
-          <Text style={styles.primaryBtnText}>Lancer la session de swipe</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.primaryBtnText}>Lancer la session de swipe</Text>
+          )}
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -228,15 +259,16 @@ function makeStyles(
 
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: colors.background },
-    scroll: { paddingHorizontal: 22, paddingTop: 4, paddingBottom: 24 },
-    field: {},
+    scroll: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 32, gap: 18 },
+    field: { gap: 8 },
+    divider: { height: 1, backgroundColor: colors.surfaceBorder },
 
     label: {
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: '700',
       color: colors.textMuted,
-      marginBottom: 8,
-      letterSpacing: 0.5,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
     },
 
     inputWrapper: {
@@ -252,7 +284,9 @@ function makeStyles(
 
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: {
-      paddingHorizontal: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 13,
       paddingVertical: 8,
       borderRadius: 999,
       backgroundColor: cardBg,
@@ -268,15 +302,15 @@ function makeStyles(
     segment: {
       flex: 1,
       alignItems: 'center',
-      paddingVertical: 10,
-      borderRadius: 10,
+      paddingVertical: 11,
+      borderRadius: 12,
       backgroundColor: cardBg,
       borderWidth: 1.5,
       borderColor,
     },
     segmentOn: { backgroundColor: colors.red, borderColor: colors.red },
     segmentPressed: { opacity: 0.7 },
-    segmentText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
+    segmentText: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
     segmentTextOn: { color: '#fff' },
 
     surface: {
@@ -297,11 +331,7 @@ function makeStyles(
     darkBtnPressed: { opacity: 0.7 },
     darkBtnText: { fontSize: 15, fontWeight: '700', color: colors.text },
 
-    codeHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
+    codeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     badge: {
       backgroundColor: colors.green,
       paddingHorizontal: 10,
@@ -309,20 +339,16 @@ function makeStyles(
       borderRadius: 999,
     },
     badgeText: { fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
-    codeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
+    codeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     codeText: {
-      fontSize: 20,
+      fontSize: 22,
       fontWeight: '800',
       color: colors.text,
-      letterSpacing: 2,
+      letterSpacing: 3,
     },
     iconBtn: {
-      width: 38,
-      height: 38,
+      width: 40,
+      height: 40,
       borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
@@ -344,8 +370,11 @@ function makeStyles(
     ghostBtnText: { fontSize: 15, fontWeight: '600', color: colors.text },
 
     footer: {
-      padding: 22,
-      paddingBottom: Platform.OS === 'ios' ? 34 : 22,
+      paddingHorizontal: 22,
+      paddingTop: 12,
+      paddingBottom: Platform.OS === 'ios' ? 36 : 22,
+      borderTopWidth: 1,
+      borderTopColor: colors.surfaceBorder,
     },
     primaryBtn: {
       backgroundColor: colors.red,
@@ -353,7 +382,7 @@ function makeStyles(
       paddingVertical: 16,
       alignItems: 'center',
     },
-    primaryBtnDisabled: { opacity: 0.5 },
+    primaryBtnDisabled: { opacity: 0.45 },
     primaryBtnPressed: { opacity: 0.85 },
     primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   });

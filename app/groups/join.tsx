@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -24,6 +25,7 @@ export default function JoinGroupScreen() {
   const styles = makeStyles(colors, colorScheme);
 
   const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const refs = useRef<(TextInput | null)[]>([]);
 
@@ -36,6 +38,8 @@ export default function JoinGroupScreen() {
     setCode(next);
     if (char && index < CODE_LENGTH - 1) {
       refs.current[index + 1]?.focus();
+    } else if (char && index === CODE_LENGTH - 1) {
+      Keyboard.dismiss();
     }
   }
 
@@ -63,6 +67,7 @@ export default function JoinGroupScreen() {
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.iconCircle}>
           <MaterialIcons name="link" size={30} color={colors.red} />
@@ -80,10 +85,17 @@ export default function JoinGroupScreen() {
               ref={el => {
                 refs.current[i] = el;
               }}
-              style={[styles.codeCell, c ? styles.codeCellFilled : undefined]}
+              style={[
+                styles.codeCell,
+                c ? styles.codeCellFilled : undefined,
+                focusedIndex === i && styles.codeCellFocused,
+              ]}
               value={c}
               maxLength={1}
               autoCapitalize="characters"
+              autoFocus={i === 0}
+              onFocus={() => setFocusedIndex(i)}
+              onBlur={() => setFocusedIndex(null)}
               onChangeText={v => setChar(i, v)}
               onKeyPress={({ nativeEvent }) => onKeyPress(i, nativeEvent.key)}
               selectionColor={colors.red}
@@ -100,7 +112,7 @@ export default function JoinGroupScreen() {
         <Pressable
           style={({ pressed }) => [styles.ghostBtn, pressed && styles.ghostBtnPressed]}
           onPress={() => {
-            // TODO GH-4: expo-clipboard paste + deep link parsing
+            // TODO GH-4: expo-clipboard paste + deep link parsing — npx expo install expo-clipboard
           }}
         >
           <MaterialIcons name="content-copy" size={19} color={colors.text} />
@@ -113,7 +125,7 @@ export default function JoinGroupScreen() {
           style={({ pressed }) => [
             styles.primaryBtn,
             (!isFull || loading) && styles.primaryBtnDisabled,
-            pressed && isFull && styles.primaryBtnPressed,
+            pressed && isFull && !loading && styles.primaryBtnPressed,
           ]}
           onPress={handleJoin}
           disabled={!isFull || loading}
@@ -135,37 +147,43 @@ function makeStyles(
     root: { flex: 1, backgroundColor: colors.background },
     scroll: {
       paddingHorizontal: 22,
-      paddingTop: 10,
+      paddingTop: 32,
       paddingBottom: 24,
       alignItems: 'center',
     },
 
     iconCircle: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
+      width: 76,
+      height: 76,
+      borderRadius: 38,
       backgroundColor: colors.redSoft,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 16,
+      marginBottom: 20,
+      shadowColor: colors.red,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.25,
+      shadowRadius: 14,
+      elevation: 6,
     },
     title: {
       fontSize: 22,
       fontWeight: '800',
       color: colors.text,
       textAlign: 'center',
-      marginBottom: 8,
+      marginBottom: 10,
+      letterSpacing: -0.3,
     },
     body: {
       fontSize: 14,
       color: colors.textMuted,
       textAlign: 'center',
       maxWidth: 280,
-      lineHeight: 20,
-      marginBottom: 26,
+      lineHeight: 21,
+      marginBottom: 32,
     },
 
-    codeGrid: { flexDirection: 'row', gap: 10, marginBottom: 28 },
+    codeGrid: { flexDirection: 'row', gap: 10, marginBottom: 32 },
     codeCell: {
       width: 44,
       height: 56,
@@ -174,13 +192,18 @@ function makeStyles(
       borderColor,
       backgroundColor: colors.surface,
       textAlign: 'center',
-      fontSize: 20,
+      fontSize: 22,
       fontWeight: '800',
       color: colors.text,
     },
     codeCellFilled: {
       borderColor: colors.red,
       backgroundColor: colors.redSoft,
+      color: colors.red,
+    },
+    codeCellFocused: {
+      borderColor: colors.red,
+      borderWidth: 2,
     },
 
     divider: {
@@ -200,7 +223,7 @@ function makeStyles(
       borderRadius: 12,
       borderWidth: 1.5,
       borderColor,
-      paddingVertical: 12,
+      paddingVertical: 13,
       paddingHorizontal: 20,
       width: '100%',
       justifyContent: 'center',
@@ -209,8 +232,11 @@ function makeStyles(
     ghostBtnText: { fontSize: 15, fontWeight: '600', color: colors.text },
 
     footer: {
-      padding: 22,
-      paddingBottom: Platform.OS === 'ios' ? 34 : 22,
+      paddingHorizontal: 22,
+      paddingTop: 12,
+      paddingBottom: Platform.OS === 'ios' ? 36 : 22,
+      borderTopWidth: 1,
+      borderTopColor: colors.surfaceBorder,
     },
     primaryBtn: {
       backgroundColor: colors.red,
@@ -218,7 +244,7 @@ function makeStyles(
       paddingVertical: 16,
       alignItems: 'center',
     },
-    primaryBtnDisabled: { opacity: 0.5 },
+    primaryBtnDisabled: { opacity: 0.45 },
     primaryBtnPressed: { opacity: 0.85 },
     primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   });
