@@ -172,6 +172,23 @@ export default function FilmStep({ genres, selected, onToggle }: Props) {
       ) : fetchError ? (
         <View style={styles.center}>
           <ThemedText style={styles.emptyText}>{fetchError}</ThemedText>
+          <Pressable
+            style={({ pressed }) => [styles.retryBtn, pressed && styles.retryBtnPressed]}
+            onPress={() => {
+              setFetchError(null);
+              setLoading(true);
+              const genreIds = genres.map(g => g.id);
+              const req = genreIds.length > 0
+                ? tmdb.getMoviesByGenres(genreIds, INITIAL_COUNT)
+                : tmdb.getPopularMovies(INITIAL_COUNT);
+              req
+                .then(setDisplayList)
+                .catch(() => setFetchError('Impossible de charger les films.'))
+                .finally(() => setLoading(false));
+            }}
+          >
+            <ThemedText style={styles.retryText}>Réessayer</ThemedText>
+          </Pressable>
         </View>
       ) : searching ? (
         <View style={styles.center}>
@@ -317,5 +334,14 @@ function makeStyles(
     },
     movieTitle: { fontSize: 11, color: colors.textMuted, marginTop: 5, lineHeight: 14 },
     emptyText: { color: colors.textFaint, fontSize: 14, textAlign: 'center', paddingTop: 30 },
+    retryBtn: {
+      marginTop: 16,
+      backgroundColor: colors.tint,
+      borderRadius: 999,
+      paddingVertical: 12,
+      paddingHorizontal: 28,
+    },
+    retryBtnPressed: { opacity: 0.85 },
+    retryText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   });
 }
