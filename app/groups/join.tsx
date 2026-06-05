@@ -13,6 +13,7 @@ import {
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -22,6 +23,7 @@ const CODE_LENGTH = 6;
 export default function JoinGroupScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(colors, colorScheme);
 
   const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
@@ -32,6 +34,16 @@ export default function JoinGroupScreen() {
   const isFull = code.every(c => c.length > 0);
 
   function setChar(index: number, value: string) {
+    if (value.length > 1) {
+      const chars = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, CODE_LENGTH - index);
+      const next = [...code];
+      chars.split('').forEach((c, j) => { next[index + j] = c; });
+      setCode(next);
+      const lastFilled = Math.min(index + chars.length - 1, CODE_LENGTH - 1);
+      if (lastFilled === CODE_LENGTH - 1) Keyboard.dismiss();
+      else refs.current[lastFilled + 1]?.focus();
+      return;
+    }
     const char = value.toUpperCase().slice(-1);
     const next = [...code];
     next[index] = char;
@@ -52,12 +64,19 @@ export default function JoinGroupScreen() {
   async function handleJoin() {
     if (!isFull || loading) return;
     setLoading(true);
-    const fullCode = code.join('');
-    // TODO GH-4: supabase.from('groups').select('id').eq('invite_code', fullCode).single()
-    console.log('Rejoindre le groupe avec le code:', fullCode);
-    setLoading(false);
-    router.back();
+    try {
+      const fullCode = code.join('');
+      // TODO GH-4: const { data, error } = await supabase.from('groups').select('id').eq('invite_code', fullCode).single()
+      // TODO GH-4: if (error) throw error; router.replace(`/groups/${data.id}`)
+      router.back();
+    } catch {
+      // TODO GH-4: setError(message)
+    } finally {
+      setLoading(false);
+    }
   }
+
+  const footerPaddingBottom = Math.max(insets.bottom, 22);
 
   return (
     <KeyboardAvoidingView
@@ -120,7 +139,7 @@ export default function JoinGroupScreen() {
         </Pressable>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
         <Pressable
           style={({ pressed }) => [
             styles.primaryBtn,
@@ -234,7 +253,6 @@ function makeStyles(
     footer: {
       paddingHorizontal: 22,
       paddingTop: 12,
-      paddingBottom: Platform.OS === 'ios' ? 36 : 22,
       borderTopWidth: 1,
       borderTopColor: colors.surfaceBorder,
     },

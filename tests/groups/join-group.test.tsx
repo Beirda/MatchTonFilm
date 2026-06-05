@@ -2,6 +2,10 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({ router: { back: jest.fn(), push: jest.fn() } }));
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 34, left: 0, right: 0 }),
+  SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 import JoinGroupScreen from '@/app/groups/join';
 

@@ -7,18 +7,20 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 function HeaderWithSub({ title, sub }: Readonly<{ title: string; sub: string }>) {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   return (
     <View style={headerStyles.container}>
-      <Text style={headerStyles.title}>{title}</Text>
-      <Text style={headerStyles.sub}>{sub}</Text>
+      <Text style={[headerStyles.title, { color: isDark ? '#ECEDEE' : '#11181C' }]}>{title}</Text>
+      <Text style={[headerStyles.sub, { color: isDark ? '#9BA1A6' : '#687076' }]}>{sub}</Text>
     </View>
   );
 }
 
 const headerStyles = StyleSheet.create({
   container: { alignItems: 'center' },
-  title: { fontSize: 17, fontWeight: '600', color: '#11181C' },
-  sub: { fontSize: 11, color: '#687076', marginTop: 1, letterSpacing: 0.3 },
+  title: { fontSize: 17, fontWeight: '600' },
+  sub: { fontSize: 11, marginTop: 1, letterSpacing: 0.3 },
 });
 
 export const unstable_settings = {

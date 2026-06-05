@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { GENRES } from '@/constants/genres';
@@ -26,11 +27,12 @@ export default function CreateGroupScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(colors, colorScheme);
 
   const [form, setForm] = useState<GroupForm>({
     name: '',
-    genres: ['Science-fiction', 'Thriller'],
+    genres: [GENRES[4], GENRES[5]],
     ageRating: '16+',
     language: 'VF + VOSTFR',
   });
@@ -48,8 +50,8 @@ export default function CreateGroupScreen() {
   }
 
   function generateCode() {
-    const prefix = form.name
-      ? form.name.slice(0, 3).toUpperCase().replace(/\s/g, '')
+    const prefix = form.name.trim()
+      ? form.name.trim().slice(0, 3).toUpperCase().replace(/\s/g, '')
       : 'MTF';
     const suffix = Math.random().toString(36).slice(2, 5).toUpperCase();
     setInviteCode(`CINE-${prefix}${suffix}`);
@@ -61,21 +63,20 @@ export default function CreateGroupScreen() {
   }
 
   async function handleSubmit() {
-    if (!form.name || loading) return;
+    if (!form.name.trim() || loading) return;
     setLoading(true);
-    // TODO GH-4: supabase.from('groups').insert({ name: form.name, genres: form.genres, age_rating: form.ageRating, language: form.language, invite_code: inviteCode })
-    setLoading(false);
+    try {
+      // TODO GH-4: await supabase.from('groups').insert({ name: form.name.trim(), genres: form.genres, age_rating: form.ageRating, language: form.language, invite_code: inviteCode })
+      // TODO GH-4: router.replace(`/groups/<new-id>`)
+    } catch {
+      // TODO GH-4: setError(message)
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const codeCardShadow = inviteCode
-    ? {
-        shadowColor: colors.red,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: isDark ? 0.35 : 0.18,
-        shadowRadius: 12,
-        elevation: 6,
-      }
-    : {};
+  const hasCode = inviteCode !== null;
+  const footerPaddingBottom = Math.max(insets.bottom, 22);
 
   return (
     <KeyboardAvoidingView
@@ -182,13 +183,7 @@ export default function CreateGroupScreen() {
         </View>
 
         {/* Bloc invitation */}
-        <View
-          style={[
-            styles.surface,
-            { borderColor: inviteCode ? colors.redLine : colors.surfaceBorder2 },
-            codeCardShadow,
-          ]}
-        >
+        <View style={[styles.surface, hasCode ? styles.surfaceActive(isDark) : undefined]}>
           {!inviteCode ? (
             <Pressable
               style={({ pressed }) => [styles.darkBtn, pressed && styles.darkBtnPressed]}
@@ -229,15 +224,15 @@ export default function CreateGroupScreen() {
       </ScrollView>
 
       {/* CTA */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
         <Pressable
           style={({ pressed }) => [
             styles.primaryBtn,
-            (!form.name || loading) && styles.primaryBtnDisabled,
-            pressed && !!form.name && !loading && styles.primaryBtnPressed,
+            (!form.name.trim() || loading) && styles.primaryBtnDisabled,
+            pressed && !!form.name.trim() && !loading && styles.primaryBtnPressed,
           ]}
           onPress={handleSubmit}
-          disabled={!form.name || loading}
+          disabled={!form.name.trim() || loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
@@ -257,133 +252,137 @@ function makeStyles(
   const cardBg = colors.surface;
   const borderColor = colors.surfaceBorder2;
 
-  return StyleSheet.create({
-    root: { flex: 1, backgroundColor: colors.background },
-    scroll: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 32, gap: 18 },
-    field: { gap: 8 },
-    divider: { height: 1, backgroundColor: colors.surfaceBorder },
+  return {
+    ...StyleSheet.create({
+      root: { flex: 1, backgroundColor: colors.background },
+      scroll: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 32, gap: 18 },
+      field: { gap: 8 },
+      divider: { height: 1, backgroundColor: colors.surfaceBorder },
 
-    label: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: colors.textMuted,
-      letterSpacing: 1,
-      textTransform: 'uppercase',
-    },
+      label: {
+        fontSize: 12,
+        fontWeight: '700' as const,
+        color: colors.textMuted,
+        letterSpacing: 1,
+        textTransform: 'uppercase' as const,
+      },
 
-    inputWrapper: {
-      backgroundColor: cardBg,
-      borderRadius: 14,
-      borderWidth: 1.5,
-      borderColor,
-      paddingHorizontal: 16,
-      paddingVertical: Platform.OS === 'ios' ? 16 : 4,
-    },
-    inputWrapperFocused: { borderColor: colors.red },
-    input: { fontSize: 16, color: colors.text },
+      inputWrapper: {
+        backgroundColor: cardBg,
+        borderRadius: 14,
+        borderWidth: 1.5,
+        borderColor,
+        paddingHorizontal: 16,
+        paddingVertical: Platform.OS === 'ios' ? 16 : 4,
+      },
+      inputWrapperFocused: { borderColor: colors.red },
+      input: { fontSize: 16, color: colors.text },
 
-    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    chip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 13,
-      paddingVertical: 8,
-      borderRadius: 999,
-      backgroundColor: cardBg,
-      borderWidth: 1.5,
-      borderColor,
-    },
-    chipOn: { backgroundColor: colors.red, borderColor: colors.red },
-    chipPressed: { opacity: 0.7 },
-    chipText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
-    chipTextOn: { color: '#fff' },
+      chipRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
+      chip: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        paddingHorizontal: 13,
+        paddingVertical: 8,
+        borderRadius: 999,
+        backgroundColor: cardBg,
+        borderWidth: 1.5,
+        borderColor,
+      },
+      chipOn: { backgroundColor: colors.red, borderColor: colors.red },
+      chipPressed: { opacity: 0.7 },
+      chipText: { fontSize: 13, fontWeight: '600' as const, color: colors.textMuted },
+      chipTextOn: { color: '#fff' },
 
-    segmented: { flexDirection: 'row', gap: 8 },
-    segment: {
-      flex: 1,
-      alignItems: 'center',
-      paddingVertical: 11,
-      borderRadius: 12,
-      backgroundColor: cardBg,
-      borderWidth: 1.5,
-      borderColor,
-    },
-    segmentOn: { backgroundColor: colors.red, borderColor: colors.red },
-    segmentPressed: { opacity: 0.7 },
-    segmentText: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
-    segmentTextOn: { color: '#fff' },
+      segmented: { flexDirection: 'row' as const, gap: 8 },
+      segment: {
+        flex: 1,
+        alignItems: 'center' as const,
+        paddingVertical: 11,
+        borderRadius: 12,
+        backgroundColor: cardBg,
+        borderWidth: 1.5,
+        borderColor,
+      },
+      segmentOn: { backgroundColor: colors.red, borderColor: colors.red },
+      segmentPressed: { opacity: 0.7 },
+      segmentText: { fontSize: 13, fontWeight: '700' as const, color: colors.textMuted },
+      segmentTextOn: { color: '#fff' },
 
-    surface: {
-      backgroundColor: cardBg,
-      borderRadius: 16,
-      borderWidth: 1.5,
-      padding: 16,
-    },
-    darkBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      backgroundColor: colors.surface2,
-      borderRadius: 12,
-      paddingVertical: 14,
-    },
-    darkBtnPressed: { opacity: 0.7 },
-    darkBtnText: { fontSize: 15, fontWeight: '700', color: colors.text },
+      surface: {
+        backgroundColor: cardBg,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor,
+        padding: 16,
+      },
+      darkBtn: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        gap: 8,
+        backgroundColor: colors.surface2,
+        borderRadius: 12,
+        paddingVertical: 14,
+      },
+      darkBtnPressed: { opacity: 0.7 },
+      darkBtnText: { fontSize: 15, fontWeight: '700' as const, color: colors.text },
 
-    codeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    badge: {
-      backgroundColor: colors.green,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 999,
-    },
-    badgeText: { fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
-    codeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    codeText: {
-      fontSize: 22,
-      fontWeight: '800',
-      color: colors.text,
-      letterSpacing: 3,
-    },
-    iconBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.surface2,
-    },
-    iconBtnPressed: { opacity: 0.7 },
+      codeHeader: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const },
+      badge: {
+        backgroundColor: colors.green,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+      },
+      badgeText: { fontSize: 11, fontWeight: '700' as const, color: '#fff', letterSpacing: 0.5 },
+      codeRow: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const },
+      codeText: { fontSize: 22, fontWeight: '800' as const, color: colors.text, letterSpacing: 3 },
+      iconBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        backgroundColor: colors.surface2,
+      },
+      iconBtnPressed: { opacity: 0.7 },
+      ghostBtn: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        gap: 8,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor,
+        paddingVertical: 12,
+      },
+      ghostBtnPressed: { opacity: 0.7 },
+      ghostBtnText: { fontSize: 15, fontWeight: '600' as const, color: colors.text },
 
-    ghostBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      borderRadius: 12,
-      borderWidth: 1.5,
-      borderColor,
-      paddingVertical: 12,
-    },
-    ghostBtnPressed: { opacity: 0.7 },
-    ghostBtnText: { fontSize: 15, fontWeight: '600', color: colors.text },
-
-    footer: {
-      paddingHorizontal: 22,
-      paddingTop: 12,
-      paddingBottom: Platform.OS === 'ios' ? 36 : 22,
-      borderTopWidth: 1,
-      borderTopColor: colors.surfaceBorder,
-    },
-    primaryBtn: {
-      backgroundColor: colors.red,
-      borderRadius: 14,
-      paddingVertical: 16,
-      alignItems: 'center',
-    },
-    primaryBtnDisabled: { opacity: 0.45 },
-    primaryBtnPressed: { opacity: 0.85 },
-    primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  });
+      footer: {
+        paddingHorizontal: 22,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: colors.surfaceBorder,
+      },
+      primaryBtn: {
+        backgroundColor: colors.red,
+        borderRadius: 14,
+        paddingVertical: 16,
+        alignItems: 'center' as const,
+      },
+      primaryBtnDisabled: { opacity: 0.45 },
+      primaryBtnPressed: { opacity: 0.85 },
+      primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' as const },
+    }),
+    surfaceActive: (dark: boolean) => ({
+      borderColor: colors.redLine,
+      shadowColor: colors.red,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: dark ? 0.35 : 0.18,
+      shadowRadius: 12,
+      elevation: 6,
+    }),
+  };
 }
