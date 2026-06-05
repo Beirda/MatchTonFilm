@@ -150,4 +150,15 @@ export class TMDBClient {
 
         return movies.slice(0, count);
     }
+
+    /**
+     * Récupère les films similaires à un film donné
+     * @param movieId id du film
+     * @param page numéro de page
+     */
+    async getSimilar(movieId: number, page = 1): Promise<TMDBPaginatedResponse<Movie>> {
+        return this.request<TMDBPaginatedResponse<Movie>>(
+            `/movie/${movieId}/similar?page=${page}&language=fr-FR`
+        );
+    }
 }
