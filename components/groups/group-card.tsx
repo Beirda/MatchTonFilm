@@ -85,17 +85,18 @@ const posterStyles = StyleSheet.create({
     height: 64,
     borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 10,
   },
 });
 
 function makeStyles(
   colors: (typeof Colors)['light'] | (typeof Colors)['dark'],
-  _scheme: 'light' | 'dark',
+  scheme: 'light' | 'dark',
 ) {
+  const isDark = scheme === 'dark';
   return StyleSheet.create({
     card: {
       flexDirection: 'row',
@@ -106,6 +107,11 @@ function makeStyles(
       borderColor: colors.surfaceBorder,
       borderRadius: 22,
       padding: 14,
+      shadowColor: isDark ? '#000' : '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: isDark ? 0.45 : 0.08,
+      shadowRadius: 20,
+      elevation: 6,
     },
     posters: {
       flexDirection: 'row',

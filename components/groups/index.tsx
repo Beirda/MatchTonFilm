@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -71,13 +72,15 @@ export default function GroupsList({ onCreatePress, onJoinPress }: Props) {
           <Text style={styles.createBtnText}>Créer un nouveau groupe</Text>
         </Pressable>
       }
-      renderItem={({ item }) => (
-        <Pressable
-          style={({ pressed }) => [pressed && styles.cardPressed]}
-          onPress={() => router.push(`/groups/${item.id}`)}
-        >
-          <GroupCard group={item} />
-        </Pressable>
+      renderItem={({ item, index }) => (
+        <Animated.View entering={FadeInDown.delay(index * 60).springify()}>
+          <Pressable
+            style={({ pressed }) => [pressed && styles.cardPressed]}
+            onPress={() => router.push(`/groups/${item.id}`)}
+          >
+            <GroupCard group={item} />
+          </Pressable>
+        </Animated.View>
       )}
     />
   );

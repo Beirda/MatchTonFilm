@@ -46,6 +46,7 @@ export default function HomeScreen() {
         <View style={styles.logoRow}>
           <View style={styles.logoMark}>
             <FontAwesome name="heart" size={16} color="#fff" />
+            <View style={styles.logoMarkShine} />
           </View>
           <View style={styles.greetingCol}>
             <Text style={styles.greetingSmall}>{greeting()}</Text>
@@ -107,6 +108,22 @@ function makeStyles(
       backgroundColor: colors.red,
       alignItems: 'center',
       justifyContent: 'center',
+      overflow: 'hidden',
+      shadowColor: colors.red,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.5,
+      shadowRadius: 14,
+      elevation: 8,
+    },
+    logoMarkShine: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '50%',
+      backgroundColor: 'rgba(255,255,255,0.18)',
+      borderBottomLeftRadius: 8,
+      borderBottomRightRadius: 8,
     },
     greetingCol: {
       gap: 0,
