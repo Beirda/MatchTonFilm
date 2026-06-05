@@ -19,7 +19,7 @@ function GroupEmpty({ onCreatePress }: Props) {
       <View style={styles.iconWrap}>
         <FontAwesome name="users" size={34} color={colors.red} />
       </View>
-      <Text style={styles.title}>Aucun groupe… pour l'instant</Text>
+      <Text style={styles.title}>{"Aucun groupe… pour l'instant"}</Text>
       <Text style={styles.body}>
         Crée ton premier groupe et invite tes amis pour lancer une session.
       </Text>

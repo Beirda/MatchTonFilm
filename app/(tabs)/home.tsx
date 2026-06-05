@@ -13,7 +13,7 @@ import GroupsList from '@/components/groups';
 
 type Tab = 'home' | 'activity' | 'profile';
 
-const NAV_ITEMS: Array<{ key: Tab; label: string }> = [
+const NAV_ITEMS: { key: Tab; label: string }[] = [
   { key: 'home', label: 'Groupes' },
   { key: 'activity', label: 'Activité' },
   { key: 'profile', label: 'Profil' },

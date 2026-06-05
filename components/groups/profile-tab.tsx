@@ -6,7 +6,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import Avatar from '@/components/ui/avatar';
 
-const STATS: Array<[string, string]> = [
+const STATS: [string, string][] = [
   ['Films vus', '128'],
   ['Matchs', '34'],
   ['Groupes', '3'],
