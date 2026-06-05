@@ -28,19 +28,21 @@ export default function GroupsList({ onCreatePress, onJoinPress }: Props) {
 
   const [groups, setGroups] = useState<Group[]>([]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [initialised, setInitialised] = useState<boolean>(false);
 
   async function loadGroups() {
     setRefreshing(true);
     const data = await fetchUserGroups();
     setGroups(data);
     setRefreshing(false);
+    setInitialised(true);
   }
 
   useEffect(() => {
     loadGroups();
   }, []);
 
-  if (!refreshing && groups.length === 0) {
+  if (initialised && !refreshing && groups.length === 0) {
     return <GroupEmpty onCreatePress={onCreatePress} />;
   }
 

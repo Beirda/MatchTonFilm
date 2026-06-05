@@ -44,13 +44,16 @@ export default function HomeScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <View style={styles.logoRow}>
-          <View style={styles.logoMark}>
-            <FontAwesome name="heart" size={16} color="#fff" />
-            <View style={styles.logoMarkShine} />
+          <View style={styles.logoMarkShadow}>
+            <View style={styles.logoMark}>
+              <FontAwesome name="heart" size={16} color="#fff" />
+              <View style={styles.logoMarkShine} />
+            </View>
           </View>
           <View style={styles.greetingCol}>
             <Text style={styles.greetingSmall}>{greeting()}</Text>
-            <Text style={styles.greetingName}>Léa</Text>
+            {/* TODO GH-auth: remplacer par le prénom de l'utilisateur connecté */}
+            <Text style={styles.greetingName}>Vous</Text>
           </View>
         </View>
         <Pressable
@@ -101,6 +104,14 @@ function makeStyles(
       alignItems: 'center',
       gap: 10,
     },
+    logoMarkShadow: {
+      shadowColor: colors.red,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.5,
+      shadowRadius: 14,
+      elevation: 8,
+      borderRadius: 12,
+    },
     logoMark: {
       width: 38,
       height: 38,
@@ -109,11 +120,6 @@ function makeStyles(
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
-      shadowColor: colors.red,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.5,
-      shadowRadius: 14,
-      elevation: 8,
     },
     logoMarkShine: {
       position: 'absolute',

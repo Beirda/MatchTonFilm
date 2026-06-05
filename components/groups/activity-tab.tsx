@@ -26,8 +26,8 @@ export default function ActivityTab() {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Activité</Text>
-      {ITEMS.map((item, i) => (
-        <View key={i} style={styles.row}>
+      {ITEMS.map((item) => (
+        <View key={item.text} style={styles.row}>
           <View style={styles.iconWrap}>
             <MaterialIcons name={item.icon} size={18} color={colors.red} />
           </View>

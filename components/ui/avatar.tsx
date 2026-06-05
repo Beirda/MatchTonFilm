@@ -7,7 +7,7 @@ type Props = Readonly<{
   borderColor?: string;
 }>;
 
-function Avatar({ initial, color, size = 34, borderColor = '#101015' }: Props) {
+function Avatar({ initial, color, size = 34, borderColor = 'transparent' }: Props) {
   return (
     <View
       style={[

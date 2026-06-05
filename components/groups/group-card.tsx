@@ -45,7 +45,7 @@ function GroupCard({ group }: Readonly<{ group: Group }>) {
 
         <View style={styles.metaRow}>
           <View style={styles.avatarStack}>
-            {group.people.slice(0, 4).map((p, k) => (
+            {(group.people ?? []).slice(0, 4).map((p, k) => (
               <View
                 key={k}
                 style={{ marginLeft: k > 0 ? -10 : 0, zIndex: 4 - k }}
@@ -107,7 +107,7 @@ function makeStyles(
       borderColor: colors.surfaceBorder,
       borderRadius: 22,
       padding: 14,
-      shadowColor: isDark ? '#000' : '#000',
+      shadowColor: '#000',
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: isDark ? 0.45 : 0.08,
       shadowRadius: 20,
