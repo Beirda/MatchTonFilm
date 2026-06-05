@@ -49,7 +49,10 @@ const MOCK_GROUPS: Group[] = [
   },
 ];
 
+/**
+ * Récupère les groupes de l'utilisateur connecté.
+ * Stub local — remplacer par `supabase.from('groups').select('*, members(count)')` quand Supabase est disponible.
+ */
 export async function fetchUserGroups(): Promise<Group[]> {
-  // TODO GH-3: supabase.from('groups').select('*, members(count)').eq('user_id', userId)
   return Promise.resolve(MOCK_GROUPS);
 }
