@@ -1,8 +1,11 @@
 import { Redirect } from 'expo-router';
 
-// TODO GH-2 : remplacer par hasCompletedOnboarding() depuis Supabase
-// → si true, afficher l'écran d'accueil des groupes
-// → si false, rediriger vers /onboarding
+// TODO GH-3: remplacer par la vraie vérification Supabase (profil utilisateur)
+const hasCompletedOnboarding = true;
+
 export default function Index() {
-  return <Redirect href="/onboarding" />;
+  if (!hasCompletedOnboarding) {
+    return <Redirect href="/onboarding" />;
+  }
+  return <Redirect href="/(tabs)/home" />;
 }
