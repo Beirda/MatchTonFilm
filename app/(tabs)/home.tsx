@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
@@ -65,7 +66,10 @@ export default function HomeScreen() {
       </View>
 
       {tab === 'home' && (
-        <GroupsList onCreatePress={() => {}} onJoinPress={() => {}} />
+        <GroupsList
+          onCreatePress={() => router.push('/groups/create')}
+          onJoinPress={() => router.push('/groups/join')}
+        />
       )}
       {tab === 'activity' && <ActivityTab />}
       {tab === 'profile' && <ProfileTab />}

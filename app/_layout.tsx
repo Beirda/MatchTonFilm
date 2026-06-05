@@ -18,6 +18,8 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="groups/[id]" options={{ title: 'Groupe', headerBackTitle: 'Retour' }} />
+        <Stack.Screen name="groups/create" options={{ title: 'Nouveau groupe', headerBackTitle: 'Retour' }} />
+        <Stack.Screen name="groups/join" options={{ title: 'Rejoindre un groupe', headerBackTitle: 'Retour' }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
