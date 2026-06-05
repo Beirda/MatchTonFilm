@@ -1,8 +1,8 @@
 import { Redirect } from 'expo-router';
 
-// TODO GH-2 : remplacer par hasCompletedOnboarding() depuis Supabase
-// → si true, afficher l'écran d'accueil des groupes
-// → si false, rediriger vers /onboarding
+// La garde onboarding doit être dans le root layout (ou un middleware),
+// pas dans ce fichier — évite la boucle avec router.replace('/(tabs)').
+// TODO GH-auth: implémenter la garde dans app/_layout.tsx quand Supabase auth est branché.
 export default function Index() {
-  return <Redirect href="/onboarding" />;
+  return <Redirect href="/(tabs)/home" />;
 }
