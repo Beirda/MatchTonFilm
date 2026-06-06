@@ -1,17 +1,20 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 
-jest.mock('expo-router', () => ({ router: { back: jest.fn(), push: jest.fn() } }));
+jest.mock('expo-router', () => ({ router: { back: jest.fn(), push: jest.fn(), replace: jest.fn() } }));
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 34, left: 0, right: 0 }),
   SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
+const mockRpc = jest.fn();
+jest.mock('@/lib/supabase', () => ({ supabase: { rpc: (...a: unknown[]) => mockRpc(...a) } }));
 
 import JoinGroupScreen from '@/app/groups/join';
 
 describe('JoinGroupScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRpc.mockResolvedValue({ data: 'group-id', error: null });
   });
 
   it("affiche le titre d'invitation", () => {
@@ -54,7 +57,7 @@ describe('JoinGroupScreen', () => {
     expect(getByText('ou')).toBeTruthy();
   });
 
-  it('appelle router.back après validation du code complet', async () => {
+  it('appelle join_group puis navigue vers le groupe après un code complet', async () => {
     const { router } = require('expo-router');
     const { getAllByDisplayValue, getByText } = render(<JoinGroupScreen />);
 
@@ -66,6 +69,22 @@ describe('JoinGroupScreen', () => {
     fireEvent.press(getByText('Rejoindre le groupe'));
 
     await new Promise(resolve => setTimeout(resolve, 50));
-    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(mockRpc).toHaveBeenCalledWith('join_group', { p_code: 'ABC123' });
+    expect(router.replace).toHaveBeenCalledWith('/groups/group-id');
+  });
+
+  it('affiche une erreur quand le code est invalide', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    const { getAllByDisplayValue, getByText } = render(<JoinGroupScreen />);
+
+    const cells = getAllByDisplayValue('');
+    ['Z', 'Z', 'Z', 'Z', 'Z', 'Z'].forEach((char, i) => {
+      fireEvent.changeText(cells[i], char);
+    });
+
+    fireEvent.press(getByText('Rejoindre le groupe'));
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(getByText("Ce code d'invitation est invalide.")).toBeTruthy();
   });
 });
