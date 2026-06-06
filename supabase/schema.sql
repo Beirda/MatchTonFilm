@@ -207,6 +207,62 @@ create policy "group_members: quitter un groupe"
 
 
 -- =============================================================================
+-- RPC : création / rejoindre un groupe (GH-3 / GH-4)
+-- SECURITY DEFINER pour contourner l'impasse RLS (on doit toucher le groupe
+-- avant d'en être membre). Voir migration 003.
+-- =============================================================================
+create or replace function create_group(
+  p_name       text,
+  p_genres     text[],
+  p_age_rating text,
+  p_language   text,
+  p_code       text
+) returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_id  uuid;
+begin
+  if v_uid is null then
+    raise exception 'not authenticated';
+  end if;
+  insert into public.groups (name, genres, age_rating, language, invitation_code, created_by)
+  values (p_name, p_genres, p_age_rating, p_language, p_code, v_uid)
+  returning id into v_id;
+  insert into public.group_members (group_id, user_id, role)
+  values (v_id, v_uid, 'admin');
+  return v_id;
+end;
+$$;
+
+create or replace function join_group(p_code text)
+returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_id  uuid;
+begin
+  if v_uid is null then
+    raise exception 'not authenticated';
+  end if;
+  select id into v_id from public.groups where invitation_code = p_code;
+  if v_id is null then
+    return null;
+  end if;
+  insert into public.group_members (group_id, user_id, role)
+  values (v_id, v_uid, 'member')
+  on conflict (group_id, user_id) do nothing;
+  return v_id;
+end;
+$$;
+
+grant execute on function create_group(text, text[], text, text, text) to authenticated;
+grant execute on function join_group(text) to authenticated;
+
+
+-- =============================================================================
 -- INDEXES (performance)
 -- =============================================================================
 create index if not exists idx_user_genres_user_id  on user_genres(user_id);

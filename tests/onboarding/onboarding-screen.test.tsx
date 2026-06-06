@@ -4,8 +4,12 @@ import { render, fireEvent } from '@testing-library/react-native';
 import OnboardingScreen from '@/app/onboarding';
 
 jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }));
+jest.mock('@/hooks/use-auth', () => ({
+  useAuth: () => ({ userId: null, email: '', loading: false }),
+}));
 jest.mock('@/services/preferences', () => ({
   saveUserPreferences: jest.fn().mockResolvedValue(undefined),
+  hasCompletedOnboarding: jest.fn().mockResolvedValue(false),
 }));
 // FilmStep s'appuie sur tmdb — on stub tous les appels pour éviter des appels
 // réseau réels (et des rejections non gérées) quand onboarding-screen navigue vers l'étape films.

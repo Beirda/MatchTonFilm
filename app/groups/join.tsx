@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { supabase } from '@/lib/supabase';
 
 const CODE_LENGTH = 6;
 
@@ -29,6 +30,7 @@ export default function JoinGroupScreen() {
   const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
   const refs = useRef<(TextInput | null)[]>([]);
 
   const isFull = code.every(c => c.length > 0);
@@ -64,12 +66,19 @@ export default function JoinGroupScreen() {
   async function handleJoin() {
     if (!isFull || loading) return;
     setLoading(true);
+    setError('');
     try {
-      // TODO GH-4: const { data, error } = await supabase.from('groups').select('id').eq('invite_code', code.join('')).single()
-      // TODO GH-4: if (error) throw error; router.replace(`/groups/${data.id}`)
-      router.back();
+      const { data, error: err } = await supabase.rpc('join_group', {
+        p_code: code.join('').toUpperCase(),
+      });
+      if (err) throw err;
+      if (!data) {
+        setError("Ce code d'invitation est invalide.");
+        return;
+      }
+      router.replace(`/groups/${data as string}`);
     } catch {
-      // TODO GH-4: setError(message)
+      setError('Impossible de rejoindre le groupe. Réessaie.');
     } finally {
       setLoading(false);
     }
@@ -117,6 +126,7 @@ export default function JoinGroupScreen() {
               onChangeText={v => setChar(i, v)}
               onKeyPress={({ nativeEvent }) => onKeyPress(i, nativeEvent.key)}
               selectionColor={colors.red}
+              accessibilityLabel={`Caractère ${i + 1} sur ${CODE_LENGTH} du code`}
             />
           ))}
         </View>
@@ -139,6 +149,11 @@ export default function JoinGroupScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
+        {error ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
         <Pressable
           style={({ pressed }) => [
             styles.primaryBtn,
@@ -147,6 +162,8 @@ export default function JoinGroupScreen() {
           ]}
           onPress={handleJoin}
           disabled={!isFull || loading}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !isFull || loading, busy: loading }}
         >
           <Text style={styles.primaryBtnText}>Rejoindre le groupe</Text>
         </Pressable>
@@ -264,5 +281,12 @@ function makeStyles(
     primaryBtnDisabled: { opacity: 0.45 },
     primaryBtnPressed: { opacity: 0.85 },
     primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    errorBox: {
+      backgroundColor: colors.redSoft,
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 12,
+    },
+    errorText: { color: colors.red, fontSize: 14, textAlign: 'center' },
   });
 }
