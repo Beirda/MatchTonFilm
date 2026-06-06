@@ -45,6 +45,32 @@ Le schéma SQL (trigger de création de profil, RLS) est dans [`supabase/schema.
 les correctifs dans [`supabase/migrations`](supabase/migrations). Applique-les via
 `supabase db push` ou le SQL Editor de Supabase.
 
+## Données (GH-2 / GH-3 / GH-4)
+
+### Préférences — GH-2
+[`services/preferences.ts`](services/preferences.ts) persiste les goûts d'onboarding dans
+`user_genres` + `user_films`. `hasCompletedOnboarding(userId)` indique si l'utilisateur
+a déjà des genres ; l'écran [`app/onboarding.tsx`](app/onboarding.tsx) saute alors directement
+aux groupes.
+
+### Groupes — GH-3
+[`lib/groups.ts`](lib/groups.ts) `fetchUserGroups()` renvoie les groupes de l'utilisateur
+avec le nombre de membres et leurs avatars (jointure `group_members` → `profiles`).
+[`app/groups/[id].tsx`](app/groups/[id].tsx) charge le détail d'un groupe.
+
+### Création / rejoindre — GH-4
+La RLS masque un groupe tant qu'on n'en est pas membre — un `insert().select()` (création)
+ou un `select` par code (join) renverrait donc vide. On passe par deux fonctions
+`SECURITY DEFINER` (migration [`003`](supabase/migrations/20260607_003_group_rpcs.sql)) :
+
+- `create_group(name, genres, age_rating, language, code)` → crée le groupe + ajoute le
+  créateur comme `admin`, renvoie l'`id`. Appelée depuis [`app/groups/create.tsx`](app/groups/create.tsx).
+- `join_group(code)` → ajoute le membre via le code d'invitation, renvoie l'`id` (ou `null`
+  si code inconnu). Appelée depuis [`app/groups/join.tsx`](app/groups/join.tsx).
+
+Le code d'invitation est une chaîne de **6 caractères** alphanumériques majuscules
+(aligné sur les 6 cases de l'écran « Rejoindre »).
+
 ## Get a fresh project
 
 When you're ready, run:
