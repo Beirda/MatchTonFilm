@@ -92,7 +92,12 @@ export default function PosterMarquee() {
   const colC = MOVIES.filter((_, i) => i % 3 === 2);
 
   return (
-    <View style={styles.root} pointerEvents="none">
+    <View
+      style={styles.root}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
       <View style={styles.grid}>
         <MarqueeColumn movies={colA} duration={42} reverse={false} />
         <MarqueeColumn movies={colB} duration={52} reverse />

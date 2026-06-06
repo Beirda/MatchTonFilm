@@ -135,7 +135,7 @@ export default function SignInScreen() {
             </View>
 
             {/* Accroche */}
-            <Text style={styles.headline}>
+            <Text style={styles.headline} accessibilityRole="header">
               Arrête de débattre.{'\n'}
               <Text style={{ color: C.red }}>Swipez.</Text>
             </Text>
