@@ -93,6 +93,7 @@ export default function SignInScreen() {
         >
           <View style={styles.logoMark}>
             <FontAwesome name="heart" size={26} color="#fff" />
+            <View style={styles.logoMarkShine} />
           </View>
           <Text style={styles.brand}>MatchTonFilm</Text>
           <Text style={styles.subtitle}>
@@ -117,8 +118,10 @@ export default function SignInScreen() {
                   onBlur={() => setFocusedField(null)}
                   autoCapitalize="none"
                   autoComplete="email"
+                  textContentType="emailAddress"
                   keyboardType="email-address"
                   returnKeyType="next"
+                  autoFocus
                 />
               </View>
             </View>
@@ -141,6 +144,7 @@ export default function SignInScreen() {
                   onBlur={() => setFocusedField(null)}
                   secureTextEntry
                   autoCapitalize="none"
+                  textContentType="password"
                   returnKeyType="done"
                   onSubmitEditing={handleSubmit}
                 />
@@ -167,6 +171,8 @@ export default function SignInScreen() {
               ]}
               onPress={handleSubmit}
               disabled={!canSubmit}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !canSubmit, busy: loading }}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
@@ -178,7 +184,12 @@ export default function SignInScreen() {
             </Pressable>
           </View>
 
-          <Pressable style={styles.switchBtn} onPress={switchMode} disabled={loading}>
+          <Pressable
+            style={styles.switchBtn}
+            onPress={switchMode}
+            disabled={loading}
+            accessibilityRole="button"
+          >
             <Text style={styles.switchText}>
               {mode === 'login' ? 'Pas encore de compte ? ' : 'Déjà un compte ? '}
               <Text style={styles.switchTextStrong}>
@@ -223,6 +234,15 @@ function makeStyles(
       shadowOpacity: 0.4,
       shadowRadius: 16,
       elevation: 8,
+      overflow: 'hidden',
+    },
+    logoMarkShine: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '50%',
+      backgroundColor: 'rgba(255,255,255,0.18)',
     },
     brand: {
       fontSize: 28,
