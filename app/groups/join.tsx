@@ -126,6 +126,7 @@ export default function JoinGroupScreen() {
               onChangeText={v => setChar(i, v)}
               onKeyPress={({ nativeEvent }) => onKeyPress(i, nativeEvent.key)}
               selectionColor={colors.red}
+              accessibilityLabel={`Caractère ${i + 1} sur ${CODE_LENGTH} du code`}
             />
           ))}
         </View>
@@ -161,6 +162,8 @@ export default function JoinGroupScreen() {
           ]}
           onPress={handleJoin}
           disabled={!isFull || loading}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !isFull || loading, busy: loading }}
         >
           <Text style={styles.primaryBtnText}>Rejoindre le groupe</Text>
         </Pressable>

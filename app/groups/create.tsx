@@ -258,6 +258,8 @@ export default function CreateGroupScreen() {
           ]}
           onPress={handleSubmit}
           disabled={!form.name.trim() || loading}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !form.name.trim() || loading, busy: loading }}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
