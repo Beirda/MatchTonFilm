@@ -25,6 +25,26 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Authentification (GH-1)
+
+L'app utilise **Supabase Auth** (email + mot de passe). Renseigne un fichier `.env`
+à la racine :
+
+```bash
+EXPO_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+```
+
+Le client est dans [`lib/supabase.ts`](lib/supabase.ts). La session est exposée à
+toute l'app via [`hooks/use-auth.tsx`](hooks/use-auth.tsx) (`useAuth()` → `{ userId, email, loading }`).
+Le `RootNavigator` ([`app/_layout.tsx`](app/_layout.tsx)) affiche l'écran de connexion
+([`components/auth/sign-in-screen.tsx`](components/auth/sign-in-screen.tsx)) tant que l'utilisateur
+n'est pas authentifié, puis la navigation normale. La déconnexion se fait depuis l'onglet Profil.
+
+Le schéma SQL (trigger de création de profil, RLS) est dans [`supabase/schema.sql`](supabase/schema.sql),
+les correctifs dans [`supabase/migrations`](supabase/migrations). Applique-les via
+`supabase db push` ou le SQL Editor de Supabase.
+
 ## Get a fresh project
 
 When you're ready, run:

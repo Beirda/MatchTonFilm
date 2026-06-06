@@ -1,9 +1,11 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/lib/supabase';
 import Avatar from '@/components/ui/avatar';
 
 const STATS: [string, string][] = [
@@ -18,13 +20,17 @@ export default function ProfileTab() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const styles = makeStyles(colors, colorScheme);
+  const { email } = useAuth();
+
+  const displayName = email ? email.split('@')[0] : 'Vous';
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Avatar initial="L" color={colors.red} size={84} borderColor={colors.background} />
-        <Text style={styles.name}>Léa Moreau</Text>
-        <Text style={styles.email}>lea.moreau@email.com</Text>
+        <Avatar initial={initial} color={colors.red} size={84} borderColor={colors.background} />
+        <Text style={styles.name}>{displayName}</Text>
+        <Text style={styles.email}>{email}</Text>
       </View>
 
       <View style={styles.statsRow}>
@@ -42,6 +48,14 @@ export default function ProfileTab() {
           <MaterialIcons name="chevron-right" size={18} color={colors.textFaint} />
         </View>
       ))}
+
+      <Pressable
+        style={({ pressed }) => [styles.signOutBtn, pressed && styles.signOutBtnPressed]}
+        onPress={() => supabase.auth.signOut()}
+      >
+        <MaterialIcons name="logout" size={18} color={colors.red} />
+        <Text style={styles.signOutText}>Se déconnecter</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -79,5 +93,19 @@ function makeStyles(
       borderBottomColor: colors.surfaceBorder,
     },
     rowLabel: { fontSize: 15, fontWeight: '600', color: colors.text },
+    signOutBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: 28,
+      paddingVertical: 14,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: colors.redLine,
+      backgroundColor: colors.redSoft,
+    },
+    signOutBtnPressed: { opacity: 0.7 },
+    signOutText: { fontSize: 15, fontWeight: '700', color: colors.red },
   });
 }

@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/hooks/use-auth';
 import ActivityTab from '@/components/groups/activity-tab';
 import ProfileTab from '@/components/groups/profile-tab';
 import GroupsList from '@/components/groups';
@@ -39,7 +40,10 @@ export default function HomeScreen() {
   const colors = Colors[colorScheme];
   const styles = makeStyles(colors, colorScheme);
   const insets = useSafeAreaInsets();
+  const { email } = useAuth();
   const [tab, setTab] = useState<Tab>('home');
+
+  const displayName = email ? email.split('@')[0] : 'Vous';
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -53,8 +57,7 @@ export default function HomeScreen() {
           </View>
           <View style={styles.greetingCol}>
             <Text style={styles.greetingSmall}>{greeting()}</Text>
-            {/* TODO GH-auth: remplacer par le prénom de l'utilisateur connecté */}
-            <Text style={styles.greetingName}>Vous</Text>
+            <Text style={styles.greetingName}>{displayName}</Text>
           </View>
         </View>
         <Pressable

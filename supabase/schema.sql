@@ -25,12 +25,14 @@ create table if not exists profiles (
 );
 
 -- Trigger : crée le profil dès qu'un user s'inscrit
+-- `set search_path = ''` + table qualifiée : obligatoire pour un SECURITY DEFINER,
+-- sinon l'insert échoue avec « Database error saving new user ».
 create or replace function handle_new_user()
 returns trigger
-language plpgsql security definer
+language plpgsql security definer set search_path = ''
 as $$
 begin
-  insert into profiles (id, display_name)
+  insert into public.profiles (id, display_name)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', new.email)
@@ -108,6 +110,32 @@ create table if not exists group_members (
 
 
 -- =============================================================================
+-- FONCTIONS ANTI-RÉCURSION RLS
+-- Court-circuitent la RLS (SECURITY DEFINER) pour éviter qu'une policy sur
+-- group_members ne se référence elle-même → « infinite recursion ».
+-- =============================================================================
+create or replace function is_group_member(gid uuid)
+returns boolean
+language sql security definer set search_path = ''
+as $$
+  select exists (
+    select 1 from public.group_members
+    where group_id = gid and user_id = auth.uid()
+  );
+$$;
+
+create or replace function is_group_admin(gid uuid)
+returns boolean
+language sql security definer set search_path = ''
+as $$
+  select exists (
+    select 1 from public.group_members
+    where group_id = gid and user_id = auth.uid() and role = 'admin'
+  );
+$$;
+
+
+-- =============================================================================
 -- ROW LEVEL SECURITY
 -- =============================================================================
 
@@ -127,6 +155,10 @@ create policy "profiles: modification son propre profil"
   on profiles for update
   using (auth.uid() = id);
 
+create policy "profiles: création de son propre profil"
+  on profiles for insert
+  with check (auth.uid() = id);
+
 
 -- user_genres : accès à ses propres préférences
 create policy "user_genres: CRUD ses propres genres"
@@ -145,12 +177,7 @@ create policy "user_films: CRUD ses propres films"
 -- groups : visible par les membres, modifiable par l'admin
 create policy "groups: lecture par les membres"
   on groups for select
-  using (
-    exists (
-      select 1 from group_members
-      where group_id = groups.id and user_id = auth.uid()
-    )
-  );
+  using (is_group_member(id));
 
 create policy "groups: création authentifiée"
   on groups for insert
@@ -158,32 +185,17 @@ create policy "groups: création authentifiée"
 
 create policy "groups: modification par l'admin"
   on groups for update
-  using (
-    exists (
-      select 1 from group_members
-      where group_id = groups.id and user_id = auth.uid() and role = 'admin'
-    )
-  );
+  using (is_group_admin(id));
 
 create policy "groups: suppression par l'admin"
   on groups for delete
-  using (
-    exists (
-      select 1 from group_members
-      where group_id = groups.id and user_id = auth.uid() and role = 'admin'
-    )
-  );
+  using (is_group_admin(id));
 
 
 -- group_members : visible par tous les membres du groupe
 create policy "group_members: lecture par les membres"
   on group_members for select
-  using (
-    exists (
-      select 1 from group_members gm
-      where gm.group_id = group_members.group_id and gm.user_id = auth.uid()
-    )
-  );
+  using (is_group_member(group_id));
 
 create policy "group_members: rejoindre un groupe"
   on group_members for insert

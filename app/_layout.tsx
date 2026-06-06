@@ -2,9 +2,12 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider, useAuth } from '@/hooks/use-auth';
+import SignInScreen from '@/components/auth/sign-in-screen';
 
 function HeaderWithSub({ title, sub }: Readonly<{ title: string; sub: string }>) {
   const scheme = useColorScheme();
@@ -27,28 +30,56 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+function RootNavigator() {
+  const colorScheme = useColorScheme();
+  const { userId, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={[styles.splash, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <ActivityIndicator color={Colors[colorScheme ?? 'light'].red} />
+      </View>
+    );
+  }
+
+  if (!userId) {
+    return <SignInScreen />;
+  }
+
+  return (
+    <Stack initialRouteName="onboarding">
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="groups/[id]" options={{ title: 'Groupe', headerBackTitle: 'Retour' }} />
+      <Stack.Screen
+        name="groups/create"
+        options={{
+          headerBackTitle: 'Retour',
+          headerTitle: () => <HeaderWithSub title="Nouveau groupe" sub="Configuration" />,
+        }}
+      />
+      <Stack.Screen
+        name="groups/join"
+        options={{ title: 'Rejoindre un groupe', headerBackTitle: 'Retour' }}
+      />
+      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+    </Stack>
+  );
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack initialRouteName="onboarding">
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
-        <Stack.Screen name="groups/[id]" options={{ title: 'Groupe', headerBackTitle: 'Retour' }} />
-        <Stack.Screen
-          name="groups/create"
-          options={{
-            headerBackTitle: 'Retour',
-            headerTitle: () => (
-              <HeaderWithSub title="Nouveau groupe" sub="Configuration" />
-            ),
-          }}
-        />
-        <Stack.Screen name="groups/join" options={{ title: 'Rejoindre un groupe', headerBackTitle: 'Retour' }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <RootNavigator />
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  splash: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+});
