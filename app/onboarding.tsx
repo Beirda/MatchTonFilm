@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/hooks/use-auth';
 import { ThemedText } from '@/components/themed-text';
 import GenreStep from '@/components/onboarding/genre-step';
 import FilmStep from '@/components/onboarding/film-step';
 import RecapStep from '@/components/onboarding/recap-step';
-import { saveUserPreferences } from '@/services/preferences';
+import { hasCompletedOnboarding, saveUserPreferences } from '@/services/preferences';
 import type { FilmPreference, GenrePreference } from '@/types/preferences';
 
 const STEPS = ['genres', 'films', 'recap'] as const;
@@ -23,13 +24,20 @@ export default function OnboardingScreen() {
   const colors = Colors[colorScheme];
   const styles = makeStyles(colors, colorScheme);
 
-  // TODO GH-2 : remplacer par useSession() Supabase quand auth disponible
-  const userId: string | null = null;
+  const { userId } = useAuth();
 
   const [step, setStep] = useState<number>(0);
   const [selectedGenres, setSelectedGenres] = useState<GenrePreference[]>([]);
   const [selectedFilms, setSelectedFilms] = useState<FilmPreference[]>([]);
   const [saving, setSaving] = useState(false);
+
+  // Onboarding déjà fait → on saute directement aux groupes.
+  useEffect(() => {
+    if (!userId) return;
+    hasCompletedOnboarding(userId).then(done => {
+      if (done) router.replace('/(tabs)');
+    });
+  }, [userId]);
 
   const currentStep: Step = STEPS[step];
 
@@ -61,17 +69,13 @@ export default function OnboardingScreen() {
   /**
    * Avance à l'étape suivante ou, à la dernière étape, sauvegarde les
    * préférences via `saveUserPreferences` et navigue vers les groupes.
-   *
-   * Si `userId` est `null` (Supabase non connecté), la navigation s'effectue
-   * sans persistance pour ne pas écraser une future ligne inconnue.
    */
   async function handleContinue() {
     if (step < STEPS.length - 1) {
       setStep(s => s + 1);
       return;
     }
-    // Dernière étape — guard : Supabase pas encore disponible
-    if (userId === null) {
+    if (!userId) {
       router.replace('/(tabs)');
       return;
     }
