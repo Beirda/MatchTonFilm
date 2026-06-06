@@ -13,15 +13,28 @@ import {
 } from 'react-native';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { GENRES } from '@/constants/genres';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { supabase } from '@/lib/supabase';
 import type { AgeRating, GroupForm, Language } from '@/types/group-form';
 
 const AGE_RATINGS: AgeRating[] = ['Tous', '12+', '16+', '18+'];
 const LANGUAGES: Language[] = ['VF', 'VOSTFR', 'VF + VOSTFR'];
+
+const CODE_CHARS = 'ABCDEFGHIJKLMNPQRSTUVWXYZ23456789';
+
+/** Code d'invitation court : 6 caractères alphanumériques en majuscules. */
+function randomCode(): string {
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  }
+  return code;
+}
 
 export default function CreateGroupScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -38,6 +51,7 @@ export default function CreateGroupScreen() {
   });
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   function toggleGenre(genre: string) {
@@ -50,11 +64,7 @@ export default function CreateGroupScreen() {
   }
 
   function generateCode() {
-    const prefix = form.name.trim()
-      ? form.name.trim().slice(0, 3).toUpperCase().replace(/\s/g, '')
-      : 'MTF';
-    const suffix = Math.random().toString(36).slice(2, 5).toUpperCase();
-    setInviteCode(`CINE-${prefix}${suffix}`);
+    setInviteCode(randomCode());
   }
 
   async function handleShare() {
@@ -65,11 +75,21 @@ export default function CreateGroupScreen() {
   async function handleSubmit() {
     if (!form.name.trim() || loading) return;
     setLoading(true);
+    setError('');
+    const code = inviteCode ?? randomCode();
+    if (!inviteCode) setInviteCode(code);
     try {
-      // TODO GH-4: await supabase.from('groups').insert({ name: form.name.trim(), genres: form.genres, age_rating: form.ageRating, language: form.language, invite_code: inviteCode })
-      // TODO GH-4: router.replace(`/groups/<new-id>`)
+      const { data, error: err } = await supabase.rpc('create_group', {
+        p_name: form.name.trim(),
+        p_genres: form.genres,
+        p_age_rating: form.ageRating,
+        p_language: form.language,
+        p_code: code,
+      });
+      if (err) throw err;
+      router.replace(`/groups/${data as string}`);
     } catch {
-      // TODO GH-4: setError(message)
+      setError('Impossible de créer le groupe. Réessaie.');
     } finally {
       setLoading(false);
     }
@@ -225,6 +245,11 @@ export default function CreateGroupScreen() {
 
       {/* CTA */}
       <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
+        {error ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
         <Pressable
           style={({ pressed }) => [
             styles.primaryBtn,
@@ -375,6 +400,13 @@ function makeStyles(
       primaryBtnDisabled: { opacity: 0.45 },
       primaryBtnPressed: { opacity: 0.85 },
       primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' as const },
+      errorBox: {
+        backgroundColor: colors.redSoft,
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 12,
+      },
+      errorText: { color: colors.red, fontSize: 14, textAlign: 'center' as const },
     }),
     surfaceActive: (dark: boolean) => ({
       borderColor: colors.redLine,
