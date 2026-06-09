@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -12,7 +12,9 @@ import {
 } from 'react-native';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { router } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
+import * as Linking from 'expo-linking';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
@@ -20,6 +22,19 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/lib/supabase';
 
 const CODE_LENGTH = 6;
+const CODE_RE = /^[A-Z0-9]{6}$/;
+
+function parseInviteCode(url: string): string | null {
+  try {
+    const { queryParams } = Linking.parse(url);
+    const raw = queryParams?.code;
+    if (typeof raw !== 'string') return null;
+    const upper = raw.toUpperCase();
+    return CODE_RE.test(upper) ? upper : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function JoinGroupScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -27,13 +42,26 @@ export default function JoinGroupScreen() {
   const insets = useSafeAreaInsets();
   const styles = makeStyles(colors, colorScheme);
 
-  const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
+  const { code: linkCode } = useLocalSearchParams<{ code?: string }>();
+  const isFromLink = typeof linkCode === 'string' && CODE_RE.test(linkCode.toUpperCase());
+
+  const [code, setCode] = useState<string[]>(() =>
+    isFromLink
+      ? (linkCode as string).toUpperCase().split('')
+      : Array(CODE_LENGTH).fill(''),
+  );
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const refs = useRef<(TextInput | null)[]>([]);
 
   const isFull = code.every(c => c.length > 0);
+
+  useEffect(() => {
+    if (isFromLink) {
+      joinWithCode((linkCode as string).toUpperCase());
+    }
+  }, []);
 
   function setChar(index: number, value: string) {
     if (value.length > 1) {
@@ -63,13 +91,13 @@ export default function JoinGroupScreen() {
     }
   }
 
-  async function handleJoin() {
-    if (!isFull || loading) return;
+  async function joinWithCode(codeStr: string) {
+    if (codeStr.length < CODE_LENGTH || loading) return;
     setLoading(true);
     setError('');
     try {
       const { data, error: err } = await supabase.rpc('join_group', {
-        p_code: code.join('').toUpperCase(),
+        p_code: codeStr,
       });
       if (err) throw err;
       if (!data) {
@@ -82,6 +110,27 @@ export default function JoinGroupScreen() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleJoin() {
+    joinWithCode(code.join('').toUpperCase());
+  }
+
+  async function handlePasteLink() {
+    setError('');
+    const text = await Clipboard.getStringAsync();
+    if (!text) {
+      setError('Aucun contenu dans le presse-papier.');
+      return;
+    }
+    const parsed = parseInviteCode(text);
+    if (!parsed) {
+      setError("Ce lien d'invitation est invalide.");
+      return;
+    }
+    setCode(parsed.split(''));
+    Keyboard.dismiss();
+    await joinWithCode(parsed);
   }
 
   const footerPaddingBottom = Math.max(insets.bottom, 22);
@@ -120,7 +169,7 @@ export default function JoinGroupScreen() {
               value={c}
               maxLength={1}
               autoCapitalize="characters"
-              autoFocus={i === 0}
+              autoFocus={i === 0 && !isFromLink}
               onFocus={() => setFocusedIndex(i)}
               onBlur={() => setFocusedIndex(null)}
               onChangeText={v => setChar(i, v)}
@@ -139,9 +188,7 @@ export default function JoinGroupScreen() {
 
         <Pressable
           style={({ pressed }) => [styles.ghostBtn, pressed && styles.ghostBtnPressed]}
-          onPress={() => {
-            // TODO GH-4: expo-clipboard paste + deep link parsing — npx expo install expo-clipboard
-          }}
+          onPress={handlePasteLink}
         >
           <MaterialIcons name="content-copy" size={19} color={colors.text} />
           <Text style={styles.ghostBtnText}>Coller un lien d&apos;invitation</Text>
