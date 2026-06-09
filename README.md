@@ -45,6 +45,16 @@ Le schéma SQL (trigger de création de profil, RLS) est dans [`supabase/schema.
 les correctifs dans [`supabase/migrations`](supabase/migrations). Applique-les via
 `supabase db push` ou le SQL Editor de Supabase.
 
+### Design de l'écran auth
+
+L'écran de connexion reprend la maquette *Welcome* (Claude Design), archivée dans
+[`docs/maquette/`](docs/maquette) (prototype HTML/CSS/JSX + tokens + chats d'intention) :
+fond animé de posters ([`components/auth/poster-marquee.tsx`](components/auth/poster-marquee.tsx),
+dégradés `expo-linear-gradient` + boucle `reanimated`), voile dégradé, lockup
+MATCH·TON·FILM et accroche condensée. L'écran est volontairement en thème sombre
+(la maquette est dark-only). Le formulaire email / mot de passe (notre flux réel)
+remplace les boutons de la maquette ; « Continuer avec Google » est omis (OAuth non câblé).
+
 ## Données (GH-2 / GH-3 / GH-4)
 
 ### Préférences — GH-2
