@@ -19,6 +19,13 @@ const POSTER_BASE = 'https://image.tmdb.org/t/p/w500';
 
 type GroupInfo = { name: string; emoji: string };
 
+function formatRuntime(minutes?: number): string | null {
+  if (!minutes) return null;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`;
+}
+
 export default function MatchesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme() ?? 'light';
@@ -127,6 +134,15 @@ export default function MatchesScreen() {
                   <ThemedText style={styles.winnerBadgeText}>FILM GAGNANT</ThemedText>
                 </View>
                 <View style={styles.winnerInfo}>
+                  {(winner.movie.genres ?? []).length > 0 && (
+                    <View style={styles.chipRow}>
+                      {winner.movie.genres.map((genre) => (
+                        <View key={genre.id} style={styles.chip}>
+                          <ThemedText style={styles.chipText}>{genre.name}</ThemedText>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                   <ThemedText type="title" style={styles.winnerTitle} numberOfLines={2}>
                     {winner.movie.title}
                   </ThemedText>
@@ -140,12 +156,39 @@ export default function MatchesScreen() {
                       <ThemedText style={styles.statValue}>{winner.likes}/{winner.total}</ThemedText>
                       <ThemedText style={styles.statLabel}>votes</ThemedText>
                     </View>
+                    {winner.movie.vote_average ? (
+                      <>
+                        <View style={styles.statDivider} />
+                        <View style={styles.stat}>
+                          <View style={styles.statRatingRow}>
+                            <FontAwesome name="star" size={14} color={colors.gold} />
+                            <ThemedText style={styles.statValue}>
+                              {winner.movie.vote_average.toFixed(1)}
+                            </ThemedText>
+                          </View>
+                          <ThemedText style={styles.statLabel}>TMDB</ThemedText>
+                        </View>
+                      </>
+                    ) : null}
                   </View>
                 </View>
               </Animated.View>
 
+              <Pressable
+                style={({ pressed }) => [styles.launchBtn, pressed && styles.launchBtnPressed]}
+                onPress={() => router.push(`/groups/${id}/swipe`)}
+                accessibilityRole="button"
+                accessibilityLabel="Lancer la soirée"
+              >
+                <FontAwesome name="play" size={16} color="#fff" />
+                <ThemedText style={styles.launchBtnText}>Lancer la soirée</ThemedText>
+              </Pressable>
+
               {rest.length > 0 && (
-                <ThemedText style={styles.sectionTitle}>Classement du groupe</ThemedText>
+                <View style={styles.sectionRow}>
+                  <ThemedText style={styles.sectionTitle}>Classement du groupe</ThemedText>
+                  <ThemedText style={styles.sectionMeta}>{winner.total} votant{winner.total > 1 ? 's' : ''}</ThemedText>
+                </View>
               )}
             </>
           }
@@ -174,7 +217,10 @@ export default function MatchesScreen() {
                 <View style={styles.bar}>
                   <View style={[styles.barFill, { width: `${item.pct}%` }]} />
                 </View>
-                <ThemedText style={styles.rankVotes}>{item.likes}/{item.total} votes</ThemedText>
+                <ThemedText style={styles.rankVotes}>
+                  {item.likes}/{item.total} votes
+                  {formatRuntime(item.movie.runtime) ? ` · ${formatRuntime(item.movie.runtime)}` : ''}
+                </ThemedText>
               </View>
             </Animated.View>
           )}
@@ -256,7 +302,7 @@ function makeStyles(
       shadowOpacity: 0.25,
       shadowRadius: 24,
       elevation: 8,
-      marginBottom: 22,
+      marginBottom: 16,
     },
     winnerPoster: {
       width: '100%',
@@ -293,6 +339,23 @@ function makeStyles(
       bottom: 16,
       gap: 4,
     },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginBottom: 8,
+    },
+    chip: {
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+    },
+    chipText: {
+      color: '#fff',
+      fontSize: 11,
+      fontWeight: '700',
+    },
     winnerTitle: {
       fontSize: 28,
       lineHeight: 32,
@@ -323,13 +386,45 @@ function makeStyles(
       alignSelf: 'stretch',
       backgroundColor: 'rgba(255,255,255,0.2)',
     },
+    statRatingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    launchBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      backgroundColor: colors.red,
+      borderRadius: 999,
+      paddingVertical: 16,
+      marginBottom: 22,
+    },
+    launchBtnPressed: {
+      opacity: 0.85,
+    },
+    launchBtnText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    sectionRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
     sectionTitle: {
       fontSize: 12,
       fontWeight: '700',
       letterSpacing: 1,
       textTransform: 'uppercase',
       color: colors.textMuted,
-      marginBottom: 12,
+    },
+    sectionMeta: {
+      fontSize: 12,
+      color: colors.textMuted,
     },
     rankRow: {
       flexDirection: 'row',
