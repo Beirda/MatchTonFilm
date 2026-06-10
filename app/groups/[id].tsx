@@ -105,6 +105,13 @@ export default function GroupDetailScreen() {
       >
         <Text style={styles.swipeBtnText}>Lancer une session</Text>
       </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [styles.resultsBtn, pressed && styles.resultsBtnPressed]}
+        onPress={() => router.push(`/groups/${id}/matches`)}
+      >
+        <Text style={styles.resultsBtnText}>Voir les résultats</Text>
+      </Pressable>
     </ThemedView>
   );
 }
@@ -169,6 +176,22 @@ function makeStyles(
     },
     swipeBtnText: {
       color: '#fff',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    resultsBtn: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      borderRadius: 999,
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+    resultsBtnPressed: {
+      opacity: 0.85,
+    },
+    resultsBtnText: {
+      color: colors.text,
       fontSize: 16,
       fontWeight: '700',
     },

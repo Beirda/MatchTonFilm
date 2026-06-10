@@ -147,6 +147,21 @@ dans la table `votes` (migration
   [`app/groups/[id]/swipe.tsx`](app/groups/[id]/swipe.tsx) ; si aucun utilisateur n'est
   connecté, l'appel ne fait rien.
 
+## Calcul des matchs (GH-9)
+
+[`getGroupMatches(groupId)`](lib/matches.ts) calcule le score de chaque film voté dans un
+groupe et renvoie un classement trié par score décroissant.
+
+- Score : `% = likes / total des votes (likes + dislikes)` sur ce film, arrondi à l'entier
+  le plus proche.
+- Les votes sont récupérés depuis la table `votes` (GH-8) et agrégés par `movie_id`, puis
+  chaque film est complété via `tmdb.getMovieDetails(id)` pour l'affiche et le titre.
+- [`app/groups/[id]/matches.tsx`](app/groups/[id]/matches.tsx) affiche le résultat : le
+  film gagnant en avant (score, votes) suivi du classement du reste des films, accessible
+  via le bouton « Voir les résultats » sur la page de détail du groupe.
+- Mise à jour : tirer la liste vers le bas ou appuyer sur le bouton de rafraîchissement
+  recalcule le classement à partir des votes les plus récents.
+
 ## Get a fresh project
 
 When you're ready, run:
