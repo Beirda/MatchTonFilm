@@ -25,16 +25,25 @@ import { supabase } from '@/lib/supabase';
 const CODE_LENGTH = 6;
 const CODE_RE = /^[A-Z0-9]{6}$/;
 
-function parseInviteCode(url: string): string | null {
+/** Extrait le code d'un texte collé : lien isolé, ou message de partage complet (texte + lien). */
+function parseInviteCode(text: string): string | null {
+  const urlMatch = text.match(/\S*:\/\/\S+/);
   try {
-    const { queryParams } = Linking.parse(url);
+    const { queryParams } = Linking.parse(urlMatch ? urlMatch[0] : text);
     const raw = queryParams?.code;
-    if (typeof raw !== 'string') return null;
-    const upper = raw.toUpperCase();
-    return CODE_RE.test(upper) ? upper : null;
+    if (typeof raw === 'string') {
+      const upper = raw.toUpperCase();
+      if (CODE_RE.test(upper)) return upper;
+    }
   } catch {
-    return null;
+    // pas une URL exploitable, on retente via une recherche directe ci-dessous
   }
+  const codeMatch = text.match(/code=([A-Za-z0-9]{6})\b/i);
+  if (codeMatch) {
+    const upper = codeMatch[1].toUpperCase();
+    if (CODE_RE.test(upper)) return upper;
+  }
+  return null;
 }
 
 export default function JoinGroupScreen() {
@@ -58,10 +67,12 @@ export default function JoinGroupScreen() {
 
   const isFull = code.every(c => c.length > 0);
 
+  // Auto-join une seule fois au montage si le code provient d'un lien d'invitation.
   useEffect(() => {
     if (isFromLink) {
       joinWithCode((linkCode as string).toUpperCase());
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function setChar(index: number, value: string) {

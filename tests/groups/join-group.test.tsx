@@ -148,6 +148,21 @@ describe('JoinGroupScreen', () => {
       });
     });
 
+    it('rejoint automatiquement quand le presse-papier contient le message de partage complet', async () => {
+      const { router } = require('expo-router');
+      mockGetStringAsync.mockResolvedValue(
+        'Rejoins mon groupe sur MatchTonFilm !\nmatchtonfilm://groups/join?code=xyz789',
+      );
+
+      const { getByText } = render(<JoinGroupScreen />);
+      fireEvent.press(getByText("Coller un lien d'invitation"));
+
+      await waitFor(() => {
+        expect(mockRpc).toHaveBeenCalledWith('join_group', { p_code: 'XYZ789' });
+        expect(router.replace).toHaveBeenCalledWith('/groups/group-id');
+      });
+    });
+
     it('affiche une erreur quand le contenu collé n\'est pas un lien valide', async () => {
       mockGetStringAsync.mockResolvedValue('ceci n\'est pas un lien');
 
