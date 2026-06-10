@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -154,6 +155,13 @@ export default function JoinGroupScreen() {
           Demande le code à ton ami ou ouvre directement le lien qu&apos;il t&apos;a partagé.
         </Text>
 
+        {isFromLink && (
+          <View style={styles.linkBanner}>
+            <MaterialIcons name="check-circle" size={16} color={colors.green} />
+            <Text style={styles.linkBannerText}>Code rempli depuis ton lien d&apos;invitation</Text>
+          </View>
+        )}
+
         <View style={styles.codeGrid}>
           {code.map((c, i) => (
             <TextInput
@@ -187,8 +195,15 @@ export default function JoinGroupScreen() {
         </View>
 
         <Pressable
-          style={({ pressed }) => [styles.ghostBtn, pressed && styles.ghostBtnPressed]}
+          style={({ pressed }) => [
+            styles.ghostBtn,
+            loading && styles.ghostBtnDisabled,
+            pressed && !loading && styles.ghostBtnPressed,
+          ]}
           onPress={handlePasteLink}
+          disabled={loading}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: loading }}
         >
           <MaterialIcons name="content-copy" size={19} color={colors.text} />
           <Text style={styles.ghostBtnText}>Coller un lien d&apos;invitation</Text>
@@ -212,7 +227,11 @@ export default function JoinGroupScreen() {
           accessibilityRole="button"
           accessibilityState={{ disabled: !isFull || loading, busy: loading }}
         >
-          <Text style={styles.primaryBtnText}>Rejoindre le groupe</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.primaryBtnText}>Rejoindre le groupe</Text>
+          )}
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -265,6 +284,18 @@ function makeStyles(
       marginBottom: 32,
     },
 
+    linkBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.redSoft,
+      borderRadius: 999,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      marginBottom: 20,
+    },
+    linkBannerText: { fontSize: 12.5, fontWeight: '700', color: colors.text },
+
     codeGrid: { flexDirection: 'row', gap: 10, marginBottom: 32 },
     codeCell: {
       width: 44,
@@ -311,6 +342,7 @@ function makeStyles(
       justifyContent: 'center',
     },
     ghostBtnPressed: { opacity: 0.7 },
+    ghostBtnDisabled: { opacity: 0.45 },
     ghostBtnText: { fontSize: 15, fontWeight: '600', color: colors.text },
 
     footer: {
