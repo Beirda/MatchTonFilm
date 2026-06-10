@@ -22,6 +22,8 @@ export default function TrailerModal({ videoKey, onClose }: Props) {
         <Pressable
           style={({ pressed }) => [styles.closeBtn, pressed && styles.closeBtnPressed]}
           onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Fermer la bande-annonce"
         >
           <MaterialIcons name="close" size={24} color="#fff" />
         </Pressable>

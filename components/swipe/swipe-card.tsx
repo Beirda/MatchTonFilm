@@ -92,6 +92,8 @@ export default function SwipeCard({ movie, onTrailerPress, likeStyle, nopeStyle 
           <Pressable
             style={({ pressed }) => [styles.trailerBtn, pressed && styles.trailerBtnPressed]}
             onPress={() => onTrailerPress(trailer.key)}
+            accessibilityRole="button"
+            accessibilityLabel={`Voir la bande-annonce de ${movie.title}`}
           >
             <FontAwesome name="play" size={13} color="#fff" />
             <ThemedText style={styles.trailerBtnText}>Bande-annonce</ThemedText>

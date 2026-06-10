@@ -80,6 +80,8 @@ export default function SwipeScreen() {
         <Pressable
           style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
           onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Retour"
         >
           <MaterialIcons name="arrow-back" size={20} color={colors.text} />
         </Pressable>
@@ -95,10 +97,16 @@ export default function SwipeScreen() {
         </View>
       ) : error ? (
         <View style={styles.center}>
+          <View style={styles.emptyIconWrap}>
+            <MaterialIcons name="error-outline" size={32} color={colors.red} />
+          </View>
           <ThemedText style={styles.emptyText}>{error}</ThemedText>
         </View>
       ) : movies.length === 0 ? (
         <View style={styles.center}>
+          <View style={styles.emptyIconWrap}>
+            <FontAwesome name="film" size={28} color={colors.red} />
+          </View>
           <ThemedText type="subtitle">Plus de films pour l&apos;instant</ThemedText>
           <ThemedText style={styles.emptyText}>
             Reviens plus tard pour découvrir de nouvelles propositions.
@@ -117,14 +125,18 @@ export default function SwipeScreen() {
 
           <View style={styles.actions}>
             <Pressable
-              style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
+              style={({ pressed }) => [styles.actionBtn, styles.dislikeBtn, pressed && styles.actionBtnPressed]}
               onPress={() => deckRef.current?.swipe('dislike')}
+              accessibilityRole="button"
+              accessibilityLabel="Passer ce film"
             >
               <MaterialIcons name="close" size={28} color={colors.red} />
             </Pressable>
             <Pressable
-              style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
+              style={({ pressed }) => [styles.actionBtn, styles.likeBtn, pressed && styles.actionBtnPressed]}
               onPress={() => deckRef.current?.swipe('like')}
+              accessibilityRole="button"
+              accessibilityLabel="J'aime ce film"
             >
               <FontAwesome name="heart" size={24} color={colors.green} />
             </Pressable>
@@ -139,7 +151,7 @@ export default function SwipeScreen() {
 
 function makeStyles(
   colors: (typeof Colors)['light'] | (typeof Colors)['dark'],
-  _scheme: 'light' | 'dark',
+  scheme: 'light' | 'dark',
 ) {
   return StyleSheet.create({
     root: {
@@ -177,6 +189,17 @@ function makeStyles(
       justifyContent: 'center',
       paddingHorizontal: 32,
       gap: 8,
+    },
+    emptyIconWrap: {
+      width: 72,
+      height: 72,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.redSoft,
+      borderWidth: 1,
+      borderColor: colors.redLine,
+      marginBottom: 6,
     },
     emptyText: {
       color: colors.textMuted,
@@ -216,6 +239,13 @@ function makeStyles(
     actionBtnPressed: {
       opacity: 0.8,
       transform: [{ scale: 0.95 }],
+    },
+    dislikeBtn: {
+      borderColor: colors.redLine,
+    },
+    likeBtn: {
+      borderColor: colors.surfaceBorder2,
+      backgroundColor: scheme === 'dark' ? colors.surface2 : colors.surface,
     },
   });
 }

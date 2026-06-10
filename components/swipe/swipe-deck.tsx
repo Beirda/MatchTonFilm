@@ -4,6 +4,7 @@ import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
+  FadeIn,
   interpolate,
   runOnJS,
   useAnimatedStyle,
@@ -100,9 +101,13 @@ const SwipeDeck = forwardRef<SwipeDeckHandle, Props>(function SwipeDeck(
   return (
     <View style={styles.root}>
       {next && (
-        <View style={[styles.cardWrap, styles.nextCard]}>
+        <Animated.View
+          key={next.id}
+          entering={FadeIn.duration(200)}
+          style={[styles.cardWrap, styles.nextCard]}
+        >
           <SwipeCard movie={next} onTrailerPress={onTrailerPress} />
-        </View>
+        </Animated.View>
       )}
       {current && (
         <GestureDetector gesture={pan}>
