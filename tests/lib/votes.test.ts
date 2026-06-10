@@ -34,4 +34,10 @@ describe('saveVote', () => {
 
     expect(mockUpsert).not.toHaveBeenCalled();
   });
+
+  it('ignore silencieusement une erreur réseau', async () => {
+    mockGetUser.mockRejectedValue(new Error('offline'));
+
+    await expect(saveVote('g1', 42, 'like')).resolves.toBeUndefined();
+  });
 });
