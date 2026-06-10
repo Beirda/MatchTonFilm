@@ -302,7 +302,8 @@ create index if not exists idx_votes_group          on votes(group_id);
 -- =============================================================================
 -- NOTES FUTURES
 -- =============================================================================
--- GH-9  : vue/table matches (group_id, tmdb_id, score, matched_at)
+-- GH-9  : fait — score calculé côté client (lib/matches.ts) à partir de la
+--         table votes, pas de table dédiée nécessaire.
 -- GH-10 : vue results_group agrégeant votes + matches par groupe
 -- GH-11 : reset votes → delete from votes where group_id = ?
 -- =============================================================================
