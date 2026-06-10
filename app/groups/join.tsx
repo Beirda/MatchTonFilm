@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -12,7 +13,9 @@ import {
 } from 'react-native';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { router } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
+import * as Linking from 'expo-linking';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
@@ -20,6 +23,28 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/lib/supabase';
 
 const CODE_LENGTH = 6;
+const CODE_RE = /^[A-Z0-9]{6}$/;
+
+/** Extrait le code d'un texte collé : lien isolé, ou message de partage complet (texte + lien). */
+function parseInviteCode(text: string): string | null {
+  const urlMatch = text.match(/\S*:\/\/\S+/);
+  try {
+    const { queryParams } = Linking.parse(urlMatch ? urlMatch[0] : text);
+    const raw = queryParams?.code;
+    if (typeof raw === 'string') {
+      const upper = raw.toUpperCase();
+      if (CODE_RE.test(upper)) return upper;
+    }
+  } catch {
+    // pas une URL exploitable, on retente via une recherche directe ci-dessous
+  }
+  const codeMatch = text.match(/code=([A-Za-z0-9]{6})\b/i);
+  if (codeMatch) {
+    const upper = codeMatch[1].toUpperCase();
+    if (CODE_RE.test(upper)) return upper;
+  }
+  return null;
+}
 
 export default function JoinGroupScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -27,13 +52,28 @@ export default function JoinGroupScreen() {
   const insets = useSafeAreaInsets();
   const styles = makeStyles(colors, colorScheme);
 
-  const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
+  const { code: linkCode } = useLocalSearchParams<{ code?: string }>();
+  const isFromLink = typeof linkCode === 'string' && CODE_RE.test(linkCode.toUpperCase());
+
+  const [code, setCode] = useState<string[]>(() =>
+    isFromLink
+      ? (linkCode as string).toUpperCase().split('')
+      : Array(CODE_LENGTH).fill(''),
+  );
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const refs = useRef<(TextInput | null)[]>([]);
 
   const isFull = code.every(c => c.length > 0);
+
+  // Auto-join une seule fois au montage si le code provient d'un lien d'invitation.
+  useEffect(() => {
+    if (isFromLink) {
+      joinWithCode((linkCode as string).toUpperCase());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function setChar(index: number, value: string) {
     if (value.length > 1) {
@@ -63,13 +103,13 @@ export default function JoinGroupScreen() {
     }
   }
 
-  async function handleJoin() {
-    if (!isFull || loading) return;
+  async function joinWithCode(codeStr: string) {
+    if (codeStr.length < CODE_LENGTH || loading) return;
     setLoading(true);
     setError('');
     try {
       const { data, error: err } = await supabase.rpc('join_group', {
-        p_code: code.join('').toUpperCase(),
+        p_code: codeStr,
       });
       if (err) throw err;
       if (!data) {
@@ -82,6 +122,27 @@ export default function JoinGroupScreen() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleJoin() {
+    joinWithCode(code.join('').toUpperCase());
+  }
+
+  async function handlePasteLink() {
+    setError('');
+    const text = await Clipboard.getStringAsync();
+    if (!text) {
+      setError('Aucun contenu dans le presse-papier.');
+      return;
+    }
+    const parsed = parseInviteCode(text);
+    if (!parsed) {
+      setError("Ce lien d'invitation est invalide.");
+      return;
+    }
+    setCode(parsed.split(''));
+    Keyboard.dismiss();
+    await joinWithCode(parsed);
   }
 
   const footerPaddingBottom = Math.max(insets.bottom, 22);
@@ -105,6 +166,13 @@ export default function JoinGroupScreen() {
           Demande le code à ton ami ou ouvre directement le lien qu&apos;il t&apos;a partagé.
         </Text>
 
+        {isFromLink && (
+          <View style={styles.linkBanner}>
+            <MaterialIcons name="check-circle" size={16} color={colors.green} />
+            <Text style={styles.linkBannerText}>Code rempli depuis ton lien d&apos;invitation</Text>
+          </View>
+        )}
+
         <View style={styles.codeGrid}>
           {code.map((c, i) => (
             <TextInput
@@ -120,7 +188,7 @@ export default function JoinGroupScreen() {
               value={c}
               maxLength={1}
               autoCapitalize="characters"
-              autoFocus={i === 0}
+              autoFocus={i === 0 && !isFromLink}
               onFocus={() => setFocusedIndex(i)}
               onBlur={() => setFocusedIndex(null)}
               onChangeText={v => setChar(i, v)}
@@ -138,10 +206,15 @@ export default function JoinGroupScreen() {
         </View>
 
         <Pressable
-          style={({ pressed }) => [styles.ghostBtn, pressed && styles.ghostBtnPressed]}
-          onPress={() => {
-            // TODO GH-4: expo-clipboard paste + deep link parsing — npx expo install expo-clipboard
-          }}
+          style={({ pressed }) => [
+            styles.ghostBtn,
+            loading && styles.ghostBtnDisabled,
+            pressed && !loading && styles.ghostBtnPressed,
+          ]}
+          onPress={handlePasteLink}
+          disabled={loading}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: loading }}
         >
           <MaterialIcons name="content-copy" size={19} color={colors.text} />
           <Text style={styles.ghostBtnText}>Coller un lien d&apos;invitation</Text>
@@ -165,7 +238,11 @@ export default function JoinGroupScreen() {
           accessibilityRole="button"
           accessibilityState={{ disabled: !isFull || loading, busy: loading }}
         >
-          <Text style={styles.primaryBtnText}>Rejoindre le groupe</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.primaryBtnText}>Rejoindre le groupe</Text>
+          )}
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -218,6 +295,18 @@ function makeStyles(
       marginBottom: 32,
     },
 
+    linkBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.redSoft,
+      borderRadius: 999,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      marginBottom: 20,
+    },
+    linkBannerText: { fontSize: 12.5, fontWeight: '700', color: colors.text },
+
     codeGrid: { flexDirection: 'row', gap: 10, marginBottom: 32 },
     codeCell: {
       width: 44,
@@ -264,6 +353,7 @@ function makeStyles(
       justifyContent: 'center',
     },
     ghostBtnPressed: { opacity: 0.7 },
+    ghostBtnDisabled: { opacity: 0.45 },
     ghostBtnText: { fontSize: 15, fontWeight: '600', color: colors.text },
 
     footer: {

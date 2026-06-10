@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -69,7 +70,8 @@ export default function CreateGroupScreen() {
 
   async function handleShare() {
     if (!inviteCode) return;
-    await Share.share({ message: `Rejoins mon groupe MatchTonFilm avec le code : ${inviteCode}` });
+    const link = Linking.createURL('groups/join', { queryParams: { code: inviteCode } });
+    await Share.share({ message: `Rejoins mon groupe sur MatchTonFilm !\n${link}`, url: link });
   }
 
   async function handleSubmit() {
@@ -225,7 +227,7 @@ export default function CreateGroupScreen() {
                 <Pressable
                   style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
                   onPress={() => {
-                    // TODO GH-4: expo-clipboard once installed — npx expo install expo-clipboard
+                    // TODO GH-4: copier le lien dans le presse-papier via expo-clipboard
                   }}
                 >
                   <MaterialIcons name="content-copy" size={18} color={colors.text} />

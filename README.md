@@ -81,6 +81,21 @@ ou un `select` par code (join) renverrait donc vide. On passe par deux fonctions
 Le code d'invitation est une chaîne de **6 caractères** alphanumériques majuscules
 (aligné sur les 6 cases de l'écran « Rejoindre »).
 
+### Rejoindre via lien — GH-5
+Le lien d'invitation est une URL `expo-linking` (`matchtonfilm://groups/join?code=XXXXXX`),
+générée dans [`app/groups/create.tsx`](app/groups/create.tsx) (`Linking.createURL`) et
+partagée via `Share.share`.
+
+Côté [`app/groups/join.tsx`](app/groups/join.tsx) :
+
+- Si l'app est ouverte via ce lien, Expo Router transmet `code` en paramètre de route
+  (`useLocalSearchParams`) ; le code est pré-rempli dans la grille et le join est lancé
+  automatiquement.
+- Le bouton « Coller un lien d'invitation » lit le presse-papier (`expo-clipboard`),
+  extrait le code via `parseInviteCode` (basé sur `Linking.parse`) puis lance le join.
+- Un lien sans paramètre `code`, mal formé, ou avec un code de longueur/format invalide
+  est rejeté avec le message « Ce lien d'invitation est invalide. ».
+
 ## Get a fresh project
 
 When you're ready, run:
