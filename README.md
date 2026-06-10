@@ -128,10 +128,24 @@ la page de détail du groupe.
   afficher l'affiche, les genres, le casting principal, le résumé et la bande-annonce.
 - [`components/swipe/swipe-deck.tsx`](components/swipe/swipe-deck.tsx) gère le swipe
   (`react-native-gesture-handler` + `react-native-reanimated`) : glisser à droite/gauche
-  ou utiliser les boutons ❤️ / ✕ sous la pile. Le like/dislike n'est pour l'instant qu'un
-  callback local — la persistance des votes arrive en GH-8.
+  ou utiliser les boutons ❤️ / ✕ sous la pile.
 - [`components/swipe/trailer-modal.tsx`](components/swipe/trailer-modal.tsx) ouvre la
   bande-annonce YouTube dans une `WebView` (`react-native-webview`) plein écran.
+
+## Persistance des votes (GH-8)
+
+Chaque like/dislike est sauvegardé via [`saveVote(groupId, movieId, vote)`](lib/votes.ts)
+dans la table `votes` (migration
+[`20260610_004_votes.sql`](supabase/migrations/20260610_004_votes.sql)).
+
+- Clé primaire composite `(user_id, group_id, movie_id)` : un nouveau swipe sur le même
+  film **met à jour** le vote existant via `upsert` (`onConflict`) plutôt que de créer un
+  doublon.
+- RLS : chaque utilisateur ne peut écrire que ses propres votes ; les membres du groupe
+  peuvent lire l'ensemble des votes du groupe (préparation des matchs, GH-9).
+- `saveVote` est appelé depuis `handleSwipe` dans
+  [`app/groups/[id]/swipe.tsx`](app/groups/[id]/swipe.tsx) ; si aucun utilisateur n'est
+  connecté, l'appel ne fait rien.
 
 ## Get a fresh project
 

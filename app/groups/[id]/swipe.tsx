@@ -10,6 +10,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getGroupRecommendations } from '@/lib/recommendations';
 import { supabase } from '@/lib/supabase';
 import { tmdb } from '@/lib/tmdb';
+import { saveVote } from '@/lib/votes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import SwipeDeck, { type SwipeDeckHandle, type SwipeDirection } from '@/components/swipe/swipe-deck';
@@ -58,8 +59,8 @@ export default function SwipeScreen() {
     };
   }, [id]);
 
-  // La persistance du vote (like/dislike) sera branchée en GH-8.
-  function handleSwipe(movie: Movie, _direction: SwipeDirection) {
+  function handleSwipe(movie: Movie, direction: SwipeDirection) {
+    saveVote(id, movie.id, direction);
     setMovies((prev) => prev.filter((m) => m.id !== movie.id));
   }
 
