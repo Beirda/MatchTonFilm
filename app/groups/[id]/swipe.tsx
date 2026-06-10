@@ -7,6 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getGroupRecommendations } from '@/lib/recommendations';
 import { supabase } from '@/lib/supabase';
 import { tmdb } from '@/lib/tmdb';
 import { ThemedText } from '@/components/themed-text';
@@ -17,7 +18,7 @@ import type { Movie } from '@/wrappers/TMDBTypes';
 
 const MOVIE_COUNT = 10;
 
-type GroupInfo = { name: string; emoji: string; genres: string[] };
+type GroupInfo = { name: string; emoji: string };
 
 export default function SwipeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,23 +38,11 @@ export default function SwipeScreen() {
 
     (async () => {
       try {
-        const { data } = await supabase
-          .from('groups')
-          .select('name, emoji, genres')
-          .eq('id', id)
-          .single();
-        const groupInfo = data as unknown as GroupInfo | null;
-        if (active) setGroup(groupInfo);
-
-        const allGenres = await tmdb.getGenres();
-        const groupGenres = (groupInfo?.genres ?? []).map((g) => g.toLowerCase());
-        const genreIds = allGenres
-          .filter((g) => groupGenres.includes(g.name.toLowerCase()))
-          .map((g) => g.id);
-
-        const list = genreIds.length > 0
-          ? await tmdb.getMoviesByGenres(genreIds, MOVIE_COUNT)
-          : await tmdb.getPopularMovies(MOVIE_COUNT);
+        const [{ data }, list] = await Promise.all([
+          supabase.from('groups').select('name, emoji').eq('id', id).single(),
+          getGroupRecommendations(id, MOVIE_COUNT),
+        ]);
+        if (active) setGroup(data as unknown as GroupInfo | null);
 
         const detailed = await Promise.all(list.map((m) => tmdb.getMovieDetails(m.id)));
         if (active) setMovies(detailed);

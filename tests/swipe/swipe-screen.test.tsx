@@ -17,15 +17,14 @@ jest.mock('@/lib/supabase', () => ({
   },
 }));
 
-const mockGetGenres = jest.fn();
-const mockGetMoviesByGenres = jest.fn();
-const mockGetPopularMovies = jest.fn();
+const mockGetGroupRecommendations = jest.fn();
+jest.mock('@/lib/recommendations', () => ({
+  getGroupRecommendations: (groupId: string, count: number) => mockGetGroupRecommendations(groupId, count),
+}));
+
 const mockGetMovieDetails = jest.fn();
 jest.mock('@/lib/tmdb', () => ({
   tmdb: {
-    getGenres: () => mockGetGenres(),
-    getMoviesByGenres: (ids: number[], count: number) => mockGetMoviesByGenres(ids, count),
-    getPopularMovies: (count: number) => mockGetPopularMovies(count),
     getMovieDetails: (id: number) => mockGetMovieDetails(id),
   },
 }));
@@ -69,46 +68,25 @@ describe('SwipeScreen', () => {
     jest.clearAllMocks();
   });
 
-  it("récupère les films à partir des genres du groupe (insensible à la casse)", async () => {
+  it("récupère les films recommandés pour le groupe", async () => {
     mockSingle.mockResolvedValue({
-      data: { name: 'Ciné Club', emoji: '🎬', genres: ['Science-fiction'] },
+      data: { name: 'Ciné Club', emoji: '🎬' },
     });
-    mockGetGenres.mockResolvedValue([
-      { id: 878, name: 'Science-Fiction' },
-      { id: 35, name: 'Comédie' },
-    ]);
-    mockGetMoviesByGenres.mockResolvedValue([{ id: 1 }]);
+    mockGetGroupRecommendations.mockResolvedValue([{ id: 1 }]);
     mockGetMovieDetails.mockResolvedValue(buildMovie(1, 'Dune'));
 
     const { getByText } = render(<SwipeScreen />);
 
     await waitFor(() => expect(getByText('Dune')).toBeTruthy());
-    expect(mockGetMoviesByGenres).toHaveBeenCalledWith([878], 10);
-    expect(mockGetPopularMovies).not.toHaveBeenCalled();
+    expect(mockGetGroupRecommendations).toHaveBeenCalledWith('g1', 10);
     expect(getByText('🎬 Ciné Club')).toBeTruthy();
-  });
-
-  it("retombe sur les films populaires si le groupe n'a pas de genre reconnu", async () => {
-    mockSingle.mockResolvedValue({
-      data: { name: 'Soirée Coloc', emoji: '🍿', genres: [] },
-    });
-    mockGetGenres.mockResolvedValue([{ id: 878, name: 'Science-Fiction' }]);
-    mockGetPopularMovies.mockResolvedValue([{ id: 2 }]);
-    mockGetMovieDetails.mockResolvedValue(buildMovie(2, 'Film populaire'));
-
-    const { getByText } = render(<SwipeScreen />);
-
-    await waitFor(() => expect(getByText('Film populaire')).toBeTruthy());
-    expect(mockGetPopularMovies).toHaveBeenCalledWith(10);
-    expect(mockGetMoviesByGenres).not.toHaveBeenCalled();
   });
 
   it("affiche un message quand il n'y a plus de film à proposer", async () => {
     mockSingle.mockResolvedValue({
-      data: { name: 'Soirée Coloc', emoji: '🍿', genres: [] },
+      data: { name: 'Soirée Coloc', emoji: '🍿' },
     });
-    mockGetGenres.mockResolvedValue([]);
-    mockGetPopularMovies.mockResolvedValue([]);
+    mockGetGroupRecommendations.mockResolvedValue([]);
 
     const { getByText } = render(<SwipeScreen />);
 

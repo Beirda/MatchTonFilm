@@ -96,16 +96,33 @@ Côté [`app/groups/join.tsx`](app/groups/join.tsx) :
 - Un lien sans paramètre `code`, mal formé, ou avec un code de longueur/format invalide
   est rejeté avec le message « Ce lien d'invitation est invalide. ».
 
+## Recommandations personnalisées (GH-6)
+
+[`lib/recommendations.ts`](lib/recommendations.ts) `getGroupRecommendations(groupId, count)`
+calcule les films à proposer à un groupe en croisant deux sources :
+
+- les **genres filtrés du groupe** (`groups.genres`, GH-4), convertis en ids TMDB via
+  [`constants/genres.ts`](constants/genres.ts) (`GENRE_TMDB_IDS`) ;
+- les **genres préférés cumulés des membres** (`user_genres`, GH-2).
+
+`intersectGenreIds` calcule l'intersection des deux ensembles ; si l'un est vide on retombe
+sur l'autre, et si l'intersection est vide on retombe sur les genres du groupe. Si le
+groupe n'a aucun genre filtré et qu'aucun membre n'a de préférences, la liste retombe sur
+les films populaires TMDB.
+
+La limite d'âge du groupe (`groups.age_rating`) contrôle le contenu adulte : seul un
+groupe `18+` passe `include_adult=true` à `discoverMoviesByGenres`/`getMoviesByGenres`
+([`wrappers/TMDBClient.ts`](wrappers/TMDBClient.ts)) ; un post-filtre exclut par sécurité
+tout résultat `adult: true` pour les autres groupes.
+
 ## Swipe (cartes) — GH-7
 
 [`app/groups/[id]/swipe.tsx`](app/groups/[id]/swipe.tsx) propose une interface type Tinder
 pour découvrir les films d'un groupe, accessible via le bouton « Lancer une session » sur
 la page de détail du groupe.
 
-- Les genres du groupe (noms français de [`constants/genres.ts`](constants/genres.ts)) sont
-  comparés (insensible à la casse) à `tmdb.getGenres()` pour récupérer les ids TMDB
-  correspondants, puis `tmdb.getMoviesByGenres(ids, 10)` renvoie les films à proposer
-  (fallback sur `tmdb.getPopularMovies(10)` si aucun genre ne correspond).
+- Les films proposés viennent de [`getGroupRecommendations(groupId, 10)`](lib/recommendations.ts)
+  (GH-6), qui croise les genres filtrés du groupe et les préférences cumulées des membres.
 - Chaque film est complété via `tmdb.getMovieDetails(id)` (nouvelle méthode du
   [`TMDBClient`](wrappers/TMDBClient.ts), `append_to_response=credits,videos`) pour
   afficher l'affiche, les genres, le casting principal, le résumé et la bande-annonce.
