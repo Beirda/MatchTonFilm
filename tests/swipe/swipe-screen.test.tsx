@@ -1,5 +1,9 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+
+// Le mock officiel exécute withTiming/withSpring et runOnJS de façon synchrone,
+// ce qui permet de tester la complétion du swipe sans timers réels.
+jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn() },
@@ -27,6 +31,11 @@ jest.mock('@/lib/tmdb', () => ({
   tmdb: {
     getMovieDetails: (id: number) => mockGetMovieDetails(id),
   },
+}));
+
+const mockSaveVote = jest.fn();
+jest.mock('@/lib/votes', () => ({
+  saveVote: (groupId: string, movieId: number, vote: string) => mockSaveVote(groupId, movieId, vote),
 }));
 
 import SwipeScreen from '@/app/groups/[id]/swipe';
@@ -91,5 +100,20 @@ describe('SwipeScreen', () => {
     const { getByText } = render(<SwipeScreen />);
 
     await waitFor(() => expect(getByText("Plus de films pour l'instant")).toBeTruthy());
+  });
+
+  it('enregistre le vote du groupe lors d\'un swipe', async () => {
+    mockSingle.mockResolvedValue({
+      data: { name: 'Ciné Club', emoji: '🎬' },
+    });
+    mockGetGroupRecommendations.mockResolvedValue([{ id: 1 }]);
+    mockGetMovieDetails.mockResolvedValue(buildMovie(1, 'Dune'));
+
+    const { getByText, getByLabelText } = render(<SwipeScreen />);
+    await waitFor(() => expect(getByText('Dune')).toBeTruthy());
+
+    fireEvent.press(getByLabelText("J'aime ce film"));
+
+    await waitFor(() => expect(mockSaveVote).toHaveBeenCalledWith('g1', 1, 'like'));
   });
 });
