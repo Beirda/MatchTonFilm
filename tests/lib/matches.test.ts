@@ -63,4 +63,23 @@ describe('getGroupMatches', () => {
 
     expect(ranking).toEqual([]);
   });
+
+  it('ignore un film dont les détails TMDB sont indisponibles', async () => {
+    mockEq.mockResolvedValue({
+      data: [
+        { movie_id: 1, vote: 'like' },
+        { movie_id: 2, vote: 'like' },
+      ],
+      error: null,
+    });
+    mockGetMovieDetails.mockImplementation((id: number) =>
+      id === 1 ? Promise.reject(new Error('TMDB Error Not Found')) : Promise.resolve(buildMovie(2, 'Oppenheimer')),
+    );
+
+    const ranking = await getGroupMatches('g1');
+
+    expect(ranking).toEqual([
+      { movie: buildMovie(2, 'Oppenheimer'), likes: 1, total: 1, pct: 100 },
+    ]);
+  });
 });

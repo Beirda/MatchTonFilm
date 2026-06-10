@@ -30,10 +30,11 @@ export async function getGroupMatches(groupId: string): Promise<MovieMatch[]> {
   }
 
   const movies = await Promise.all(
-    [...counts.keys()].map((id) => tmdb.getMovieDetails(id)),
+    [...counts.keys()].map((id) => tmdb.getMovieDetails(id).catch(() => null)),
   );
 
   return movies
+    .filter((movie): movie is Movie => movie !== null)
     .map((movie) => {
       const c = counts.get(movie.id) as { likes: number; total: number };
       return {
