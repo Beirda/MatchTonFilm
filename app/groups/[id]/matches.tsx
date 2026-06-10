@@ -156,7 +156,7 @@ export default function MatchesScreen() {
                       <ThemedText style={styles.statValue}>{winner.likes}/{winner.total}</ThemedText>
                       <ThemedText style={styles.statLabel}>votes</ThemedText>
                     </View>
-                    {winner.movie.vote_average ? (
+                    {winner.movie.vote_average > 0 ? (
                       <>
                         <View style={styles.statDivider} />
                         <View style={styles.stat}>
@@ -185,14 +185,13 @@ export default function MatchesScreen() {
               </Pressable>
 
               {rest.length > 0 && (
-                <View style={styles.sectionRow}>
-                  <ThemedText style={styles.sectionTitle}>Classement du groupe</ThemedText>
-                  <ThemedText style={styles.sectionMeta}>{winner.total} votant{winner.total > 1 ? 's' : ''}</ThemedText>
-                </View>
+                <ThemedText style={styles.sectionTitle}>Classement du groupe</ThemedText>
               )}
             </>
           }
-          renderItem={({ item, index }) => (
+          renderItem={({ item, index }) => {
+            const runtime = formatRuntime(item.movie.runtime);
+            return (
             <Animated.View
               entering={FadeInDown.delay(index * 50).springify()}
               style={styles.rankRow}
@@ -219,11 +218,12 @@ export default function MatchesScreen() {
                 </View>
                 <ThemedText style={styles.rankVotes}>
                   {item.likes}/{item.total} votes
-                  {formatRuntime(item.movie.runtime) ? ` · ${formatRuntime(item.movie.runtime)}` : ''}
+                  {runtime ? ` · ${runtime}` : ''}
                 </ThemedText>
               </View>
             </Animated.View>
-          )}
+            );
+          }}
         />
       )}
     </ThemedView>
@@ -409,22 +409,13 @@ function makeStyles(
       fontSize: 16,
       fontWeight: '700',
     },
-    sectionRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
     sectionTitle: {
       fontSize: 12,
       fontWeight: '700',
       letterSpacing: 1,
       textTransform: 'uppercase',
       color: colors.textMuted,
-    },
-    sectionMeta: {
-      fontSize: 12,
-      color: colors.textMuted,
+      marginBottom: 12,
     },
     rankRow: {
       flexDirection: 'row',
