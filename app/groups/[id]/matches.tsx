@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -12,6 +12,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getGroupMatches, type MovieMatch } from '@/lib/matches';
 import { supabase } from '@/lib/supabase';
+import { isGroupAdmin, resetGroupVotes } from '@/lib/votes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
@@ -36,14 +37,18 @@ export default function MatchesScreen() {
   const [ranking, setRanking] = useState<MovieMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const load = useCallback(async () => {
-    const [{ data }, matches] = await Promise.all([
+    const [{ data }, matches, admin] = await Promise.all([
       supabase.from('groups').select('name, emoji').eq('id', id).single(),
       getGroupMatches(id),
+      isGroupAdmin(id),
     ]);
     setGroup(data as unknown as GroupInfo | null);
     setRanking(matches);
+    setIsAdmin(admin);
   }, [id]);
 
   useEffect(() => {
@@ -62,6 +67,31 @@ export default function MatchesScreen() {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  function onResetVotes() {
+    Alert.alert(
+      'Réinitialiser les votes',
+      'Tous les votes du groupe seront supprimés et un nouveau cycle pourra commencer. Continuer ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Réinitialiser',
+          style: 'destructive',
+          onPress: async () => {
+            setResetting(true);
+            try {
+              await resetGroupVotes(id);
+              await load();
+            } catch {
+              Alert.alert('Erreur', 'Impossible de réinitialiser les votes.');
+            } finally {
+              setResetting(false);
+            }
+          },
+        },
+      ],
+    );
   }
 
   const winner = ranking[0];
@@ -224,6 +254,32 @@ export default function MatchesScreen() {
             </Animated.View>
             );
           }}
+          ListFooterComponent={
+            isAdmin ? (
+              <Animated.View entering={FadeInDown.delay(rest.length * 50).springify()}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.resetBtn,
+                    (pressed || resetting) && styles.resetBtnPressed,
+                  ]}
+                  onPress={onResetVotes}
+                  disabled={resetting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Réinitialiser les votes"
+                  accessibilityHint="Supprime les votes du groupe et permet de relancer un nouveau cycle"
+                >
+                  {resetting ? (
+                    <ActivityIndicator color={colors.text} size="small" />
+                  ) : (
+                    <>
+                      <MaterialIcons name="refresh" size={19} color={colors.text} />
+                      <ThemedText style={styles.resetBtnText}>Réinitialiser</ThemedText>
+                    </>
+                  )}
+                </Pressable>
+              </Animated.View>
+            ) : null
+          }
         />
       )}
     </ThemedView>
@@ -473,6 +529,30 @@ function makeStyles(
     rankVotes: {
       fontSize: 11.5,
       color: colors.textMuted,
+    },
+    resetBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      borderRadius: 999,
+      paddingVertical: 16,
+      marginTop: 22,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: scheme === 'dark' ? 0.3 : 0.08,
+      shadowRadius: 10,
+      elevation: 2,
+    },
+    resetBtnPressed: {
+      opacity: 0.7,
+    },
+    resetBtnText: {
+      fontSize: 16,
+      fontWeight: '700',
     },
   });
 }

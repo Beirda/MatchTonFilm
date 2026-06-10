@@ -1,14 +1,20 @@
 const mockGetUser = jest.fn();
 const mockUpsert = jest.fn();
+const mockSingle = jest.fn();
+const mockRpc = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     auth: { getUser: () => mockGetUser() },
-    from: () => ({ upsert: (...args: unknown[]) => mockUpsert(...args) }),
+    from: () => ({
+      upsert: (...args: unknown[]) => mockUpsert(...args),
+      select: () => ({ eq: () => ({ eq: () => ({ single: () => mockSingle() }) }) }),
+    }),
+    rpc: (...args: unknown[]) => mockRpc(...args),
   },
 }));
 
-import { saveVote } from '@/lib/votes';
+import { isGroupAdmin, resetGroupVotes, saveVote } from '@/lib/votes';
 
 describe('saveVote', () => {
   beforeEach(() => {
@@ -39,5 +45,52 @@ describe('saveVote', () => {
     mockGetUser.mockRejectedValue(new Error('offline'));
 
     await expect(saveVote('g1', 42, 'like')).resolves.toBeUndefined();
+  });
+});
+
+describe('isGroupAdmin', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('retourne true si le rôle du membre est admin', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    mockSingle.mockResolvedValue({ data: { role: 'admin' } });
+
+    await expect(isGroupAdmin('g1')).resolves.toBe(true);
+  });
+
+  it('retourne false si le rôle du membre est member', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    mockSingle.mockResolvedValue({ data: { role: 'member' } });
+
+    await expect(isGroupAdmin('g1')).resolves.toBe(false);
+  });
+
+  it('retourne false si aucun utilisateur connecté', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+
+    await expect(isGroupAdmin('g1')).resolves.toBe(false);
+    expect(mockSingle).not.toHaveBeenCalled();
+  });
+});
+
+describe('resetGroupVotes', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('appelle la RPC reset_group_votes avec le group_id', async () => {
+    mockRpc.mockResolvedValue({ error: null });
+
+    await resetGroupVotes('g1');
+
+    expect(mockRpc).toHaveBeenCalledWith('reset_group_votes', { p_group_id: 'g1' });
+  });
+
+  it("propage l'erreur renvoyée par la RPC", async () => {
+    mockRpc.mockResolvedValue({ error: new Error('not authorized') });
+
+    await expect(resetGroupVotes('g1')).rejects.toThrow('not authorized');
   });
 });

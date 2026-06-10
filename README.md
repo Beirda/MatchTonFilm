@@ -162,6 +162,23 @@ groupe et renvoie un classement trié par score décroissant.
 - Mise à jour : tirer la liste vers le bas ou appuyer sur le bouton de rafraîchissement
   recalcule le classement à partir des votes les plus récents.
 
+## Reset des votes (GH-11)
+
+L'admin du groupe peut relancer un cycle de swipe depuis l'écran des résultats
+([`app/groups/[id]/matches.tsx`](app/groups/[id]/matches.tsx)) via le bouton « Réinitialiser ».
+
+- [`isGroupAdmin(groupId)`](lib/votes.ts) vérifie le rôle de l'utilisateur connecté dans
+  `group_members` pour n'afficher le bouton qu'aux admins.
+- [`resetGroupVotes(groupId)`](lib/votes.ts) appelle la RPC `reset_group_votes`
+  (migration [`20260610_005_reset_votes.sql`](supabase/migrations/20260610_005_reset_votes.sql)),
+  exécutée en `SECURITY DEFINER` pour pouvoir supprimer les votes de **tous** les membres
+  du groupe (la policy RLS `votes: CRUD ses propres votes` limite chaque membre à ses
+  propres lignes).
+- La RPC vérifie elle-même `is_group_admin(p_group_id)` et lève une exception sinon —
+  la sécurité ne repose pas uniquement sur l'affichage conditionnel du bouton côté client.
+- Une confirmation est demandée avant suppression ; une fois les votes supprimés, le
+  classement est rechargé et un nouveau cycle de swipe peut commencer.
+
 ## Get a fresh project
 
 When you're ready, run:

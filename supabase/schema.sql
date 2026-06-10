@@ -288,6 +288,28 @@ create policy "votes: CRUD ses propres votes"
   with check (auth.uid() = user_id);
 
 
+-- -----------------------------------------------------------------------------
+-- GH-11 : reset_group_votes
+-- RPC SECURITY DEFINER : permet à l'admin de supprimer les votes de tout le
+-- groupe pour relancer un cycle (la policy "votes: CRUD ses propres votes"
+-- limite chaque membre à ses propres votes).
+-- -----------------------------------------------------------------------------
+create or replace function reset_group_votes(p_group_id uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if not public.is_group_admin(p_group_id) then
+    raise exception 'not authorized';
+  end if;
+
+  delete from public.votes where group_id = p_group_id;
+end;
+$$;
+
+grant execute on function reset_group_votes(uuid) to authenticated;
+
+
 -- =============================================================================
 -- INDEXES (performance)
 -- =============================================================================
@@ -305,5 +327,5 @@ create index if not exists idx_votes_group          on votes(group_id);
 -- GH-9  : fait — score calculé côté client (lib/matches.ts) à partir de la
 --         table votes, pas de table dédiée nécessaire.
 -- GH-10 : vue results_group agrégeant votes + matches par groupe
--- GH-11 : reset votes → delete from votes where group_id = ?
+-- GH-11 : fait — reset_group_votes(p_group_id), RPC admin (voir migration 005)
 -- =============================================================================

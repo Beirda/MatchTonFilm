@@ -24,3 +24,30 @@ export async function saveVote(groupId: string, movieId: number, vote: VoteValue
     // le vote sera simplement absent côté serveur.
   }
 }
+
+/**
+ * Indique si l'utilisateur connecté est admin du groupe donné.
+ */
+export async function isGroupAdmin(groupId: string): Promise<boolean> {
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth.user;
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id)
+    .single();
+
+  return (data as { role: string } | null)?.role === 'admin';
+}
+
+/**
+ * Supprime les votes de tous les membres pour ce groupe (admin uniquement),
+ * via la RPC `reset_group_votes` afin de relancer un nouveau cycle.
+ */
+export async function resetGroupVotes(groupId: string): Promise<void> {
+  const { error } = await supabase.rpc('reset_group_votes', { p_group_id: groupId });
+  if (error) throw error;
+}
