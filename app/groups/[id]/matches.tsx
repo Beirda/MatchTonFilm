@@ -4,7 +4,9 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -105,7 +107,7 @@ export default function MatchesScreen() {
           contentContainerStyle={styles.list}
           ListHeaderComponent={
             <>
-              <View style={styles.winner}>
+              <Animated.View entering={FadeIn.duration(300)} style={styles.winner}>
                 {winner.movie.poster_path ? (
                   <Image
                     source={{ uri: `${POSTER_BASE}${winner.movie.poster_path}` }}
@@ -115,25 +117,32 @@ export default function MatchesScreen() {
                 ) : (
                   <View style={[styles.winnerPoster, styles.posterPlaceholder]} />
                 )}
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.15)', 'rgba(0,0,0,0.85)']}
+                  locations={[0, 0.3, 1]}
+                  style={styles.winnerGradient}
+                />
                 <View style={styles.winnerBadge}>
                   <FontAwesome name="trophy" size={13} color="#1a1206" />
                   <ThemedText style={styles.winnerBadgeText}>FILM GAGNANT</ThemedText>
                 </View>
-                <ThemedText type="title" style={styles.winnerTitle} numberOfLines={2}>
-                  {winner.movie.title}
-                </ThemedText>
-                <View style={styles.statsRow}>
-                  <View style={styles.stat}>
-                    <ThemedText style={styles.statValue}>{winner.pct}%</ThemedText>
-                    <ThemedText style={styles.statLabel}>de likes</ThemedText>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.stat}>
-                    <ThemedText style={styles.statValue}>{winner.likes}/{winner.total}</ThemedText>
-                    <ThemedText style={styles.statLabel}>votes</ThemedText>
+                <View style={styles.winnerInfo}>
+                  <ThemedText type="title" style={styles.winnerTitle} numberOfLines={2}>
+                    {winner.movie.title}
+                  </ThemedText>
+                  <View style={styles.statsRow}>
+                    <View style={styles.stat}>
+                      <ThemedText style={styles.statValue}>{winner.pct}%</ThemedText>
+                      <ThemedText style={styles.statLabel}>de likes</ThemedText>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.stat}>
+                      <ThemedText style={styles.statValue}>{winner.likes}/{winner.total}</ThemedText>
+                      <ThemedText style={styles.statLabel}>votes</ThemedText>
+                    </View>
                   </View>
                 </View>
-              </View>
+              </Animated.View>
 
               {rest.length > 0 && (
                 <ThemedText style={styles.sectionTitle}>Classement du groupe</ThemedText>
@@ -141,7 +150,10 @@ export default function MatchesScreen() {
             </>
           }
           renderItem={({ item, index }) => (
-            <View style={styles.rankRow}>
+            <Animated.View
+              entering={FadeInDown.delay(index * 50).springify()}
+              style={styles.rankRow}
+            >
               <ThemedText style={styles.rankNum}>{index + 2}</ThemedText>
               {item.movie.poster_path ? (
                 <Image
@@ -164,7 +176,7 @@ export default function MatchesScreen() {
                 </View>
                 <ThemedText style={styles.rankVotes}>{item.likes}/{item.total} votes</ThemedText>
               </View>
-            </View>
+            </Animated.View>
           )}
         />
       )}
@@ -239,31 +251,34 @@ function makeStyles(
       borderRadius: 22,
       overflow: 'hidden',
       backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.surfaceBorder,
-      padding: 16,
-      gap: 4,
-      marginBottom: 18,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.25,
+      shadowRadius: 24,
+      elevation: 8,
+      marginBottom: 22,
     },
     winnerPoster: {
       width: '100%',
-      height: 220,
-      borderRadius: 16,
-      marginBottom: 12,
+      height: 320,
+    },
+    winnerGradient: {
+      ...StyleSheet.absoluteFillObject,
     },
     posterPlaceholder: {
       backgroundColor: colors.surface3,
     },
     winnerBadge: {
+      position: 'absolute',
+      top: 14,
+      left: 14,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      alignSelf: 'flex-start',
       backgroundColor: colors.gold,
       borderRadius: 999,
       paddingHorizontal: 12,
       paddingVertical: 5,
-      marginBottom: 6,
     },
     winnerBadgeText: {
       color: '#1a1206',
@@ -271,8 +286,17 @@ function makeStyles(
       fontWeight: '800',
       letterSpacing: 0.5,
     },
+    winnerInfo: {
+      position: 'absolute',
+      left: 18,
+      right: 18,
+      bottom: 16,
+      gap: 4,
+    },
     winnerTitle: {
-      fontSize: 24,
+      fontSize: 28,
+      lineHeight: 32,
+      color: '#fff',
       textTransform: 'uppercase',
     },
     statsRow: {
@@ -285,17 +309,19 @@ function makeStyles(
       gap: 2,
     },
     statValue: {
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: '800',
+      color: '#fff',
     },
     statLabel: {
-      fontSize: 12,
-      color: colors.textMuted,
+      fontSize: 11,
+      fontWeight: '600',
+      color: 'rgba(255,255,255,0.7)',
     },
     statDivider: {
       width: 1,
-      height: 28,
-      backgroundColor: colors.surfaceBorder2,
+      alignSelf: 'stretch',
+      backgroundColor: 'rgba(255,255,255,0.2)',
     },
     sectionTitle: {
       fontSize: 12,
@@ -316,11 +342,11 @@ function makeStyles(
       padding: 10,
     },
     rankNum: {
-      width: 20,
+      width: 24,
       textAlign: 'center',
-      fontSize: 14,
-      fontWeight: '800',
-      color: colors.textFaint,
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.textMuted,
     },
     rankPoster: {
       width: 42,
