@@ -262,6 +262,32 @@ grant execute on function create_group(text, text[], text, text, text) to authen
 grant execute on function join_group(text) to authenticated;
 
 
+-- -----------------------------------------------------------------------------
+-- GH-8 : votes
+-- Like/dislike par (user, groupe, film). La clé primaire composite empêche
+-- les doublons et permet un upsert (re-swipe = vote mis à jour).
+-- -----------------------------------------------------------------------------
+create table if not exists votes (
+  user_id    uuid        not null references profiles(id) on delete cascade,
+  group_id   uuid        not null references groups(id) on delete cascade,
+  movie_id   integer     not null,
+  vote       text        not null check (vote in ('like', 'dislike')),
+  created_at timestamptz not null default now(),
+  primary key (user_id, group_id, movie_id)
+);
+
+alter table votes enable row level security;
+
+create policy "votes: lecture par les membres du groupe"
+  on votes for select
+  using (is_group_member(group_id));
+
+create policy "votes: CRUD ses propres votes"
+  on votes for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+
 -- =============================================================================
 -- INDEXES (performance)
 -- =============================================================================
@@ -270,13 +296,12 @@ create index if not exists idx_user_films_user_id   on user_films(user_id);
 create index if not exists idx_group_members_group  on group_members(group_id);
 create index if not exists idx_group_members_user   on group_members(user_id);
 create index if not exists idx_groups_invitation    on groups(invitation_code);
+create index if not exists idx_votes_group          on votes(group_id);
 
 
 -- =============================================================================
 -- NOTES FUTURES
 -- =============================================================================
--- GH-5  : rejoindre via invitation_code → lookup sur groups(invitation_code)
--- GH-8  : table votes (group_id, user_id, tmdb_id, liked bool, created_at)
 -- GH-9  : vue/table matches (group_id, tmdb_id, score, matched_at)
 -- GH-10 : vue results_group agrégeant votes + matches par groupe
 -- GH-11 : reset votes → delete from votes where group_id = ?
