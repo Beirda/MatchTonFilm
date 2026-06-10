@@ -46,8 +46,9 @@ export default function SwipeScreen() {
         if (active) setGroup(groupInfo);
 
         const allGenres = await tmdb.getGenres();
+        const groupGenres = (groupInfo?.genres ?? []).map((g) => g.toLowerCase());
         const genreIds = allGenres
-          .filter((g) => groupInfo?.genres?.includes(g.name))
+          .filter((g) => groupGenres.includes(g.name.toLowerCase()))
           .map((g) => g.id);
 
         const list = genreIds.length > 0
