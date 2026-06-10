@@ -103,17 +103,21 @@ export class TMDBClient {
      * Récupère une page par rapport à une liste de genre
      * @param genreIds liste d'ids de genre
      * @param page index de page
+     * @param options.includeAdult inclut le contenu réservé aux adultes (défaut : false)
      */
     async discoverMoviesByGenres(
         genreIds: number[],
-        page = 1
+        page = 1,
+        options: { includeAdult?: boolean } = {}
     ): Promise<TMDBPaginatedResponse<Movie>> {
 
         const genreIdsParam =
             genreIds.join(",");
 
+        const adultParam = options.includeAdult ? "&include_adult=true" : "";
+
         return this.request(
-            `/discover/movie?with_genres=${genreIdsParam}&page=${page}&sort_by=popularity.desc&language=fr-FR`
+            `/discover/movie?with_genres=${genreIdsParam}&page=${page}&sort_by=popularity.desc&language=fr-FR${adultParam}`
         );
     }
 
@@ -121,10 +125,12 @@ export class TMDBClient {
      * Récupère une liste de films à partir d'une liste de genres
      * @param genreIds liste de genre à rechercher
      * @param count Nombre de films à récupérer
+     * @param options.includeAdult inclut le contenu réservé aux adultes (défaut : false)
      */
     async getMoviesByGenres(
         genreIds: number[],
-        count: number = 10
+        count: number = 10,
+        options: { includeAdult?: boolean } = {}
     ): Promise<Movie[]> {
 
         const movies: Movie[] = [];
@@ -136,7 +142,8 @@ export class TMDBClient {
             const pageResponse =
                 await this.discoverMoviesByGenres(
                     genreIds,
-                    page
+                    page,
+                    options
                 );
 
             movies.push(...pageResponse.results);

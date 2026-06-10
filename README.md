@@ -96,6 +96,25 @@ Côté [`app/groups/join.tsx`](app/groups/join.tsx) :
 - Un lien sans paramètre `code`, mal formé, ou avec un code de longueur/format invalide
   est rejeté avec le message « Ce lien d'invitation est invalide. ».
 
+## Recommandations personnalisées (GH-6)
+
+[`lib/recommendations.ts`](lib/recommendations.ts) `getGroupRecommendations(groupId, count)`
+calcule les films à proposer à un groupe en croisant deux sources :
+
+- les **genres filtrés du groupe** (`groups.genres`, GH-4), convertis en ids TMDB via
+  [`constants/genres.ts`](constants/genres.ts) (`GENRE_TMDB_IDS`) ;
+- les **genres préférés cumulés des membres** (`user_genres`, GH-2).
+
+`intersectGenreIds` calcule l'intersection des deux ensembles ; si l'un est vide on retombe
+sur l'autre, et si l'intersection est vide on retombe sur les genres du groupe. Si le
+groupe n'a aucun genre filtré et qu'aucun membre n'a de préférences, la liste retombe sur
+les films populaires TMDB.
+
+La limite d'âge du groupe (`groups.age_rating`) contrôle le contenu adulte : seul un
+groupe `18+` passe `include_adult=true` à `discoverMoviesByGenres`/`getMoviesByGenres`
+([`wrappers/TMDBClient.ts`](wrappers/TMDBClient.ts)) ; un post-filtre exclut par sécurité
+tout résultat `adult: true` pour les autres groupes.
+
 ## Get a fresh project
 
 When you're ready, run:

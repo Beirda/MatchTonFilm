@@ -276,6 +276,26 @@ test("discoverMoviesByGenres forwards a custom page number", async () => {
   );
 });
 
+test("discoverMoviesByGenres appends include_adult when requested", async () => {
+  const client = new TMDBClient(API_KEY);
+  const payload = {
+    page: 1,
+    results: [sampleMovie(9)],
+    total_pages: 1,
+    total_results: 1,
+  };
+
+  installFetchMock(createJsonResponse(payload));
+
+  const result = await client.discoverMoviesByGenres([27], 1, { includeAdult: true });
+
+  assert.deepEqual(result, payload);
+  assert.equal(
+    String(latestCall().input),
+    `${BASE_URL}/discover/movie?with_genres=27&page=1&sort_by=popularity.desc&language=fr-FR&include_adult=true`
+  );
+});
+
 test("getMoviesByGenres aggregates pages until the requested count is reached", async () => {
   const client = new TMDBClient(API_KEY);
 
