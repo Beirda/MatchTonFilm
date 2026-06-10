@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn() },
@@ -14,8 +15,14 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 const mockGetGroupMatches = jest.fn();
+const mockIsGroupAdmin = jest.fn();
+const mockResetGroupVotes = jest.fn();
 jest.mock('@/lib/matches', () => ({
   getGroupMatches: (groupId: string) => mockGetGroupMatches(groupId),
+}));
+jest.mock('@/lib/votes', () => ({
+  isGroupAdmin: (groupId: string) => mockIsGroupAdmin(groupId),
+  resetGroupVotes: (groupId: string) => mockResetGroupVotes(groupId),
 }));
 
 import MatchesScreen from '@/app/groups/[id]/matches';
@@ -34,6 +41,7 @@ describe('MatchesScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSingle.mockResolvedValue({ data: { name: 'Ciné Club', emoji: '🎬' } });
+    mockIsGroupAdmin.mockResolvedValue(false);
   });
 
   it('affiche le film gagnant et le classement', async () => {
@@ -58,5 +66,36 @@ describe('MatchesScreen', () => {
     const { getByText } = render(<MatchesScreen />);
 
     await waitFor(() => expect(getByText('Pas encore de match')).toBeTruthy());
+  });
+
+  it("ne montre pas le bouton de réinitialisation à un membre", async () => {
+    mockGetGroupMatches.mockResolvedValue([buildMatch(1, 'Oppenheimer', 2, 2, 100)]);
+    mockIsGroupAdmin.mockResolvedValue(false);
+
+    const { getByText, queryByText } = render(<MatchesScreen />);
+
+    await waitFor(() => expect(getByText('Oppenheimer')).toBeTruthy());
+    expect(queryByText('Réinitialiser')).toBeNull();
+  });
+
+  it("montre le bouton de réinitialisation à un admin et supprime les votes après confirmation", async () => {
+    mockGetGroupMatches.mockResolvedValue([buildMatch(1, 'Oppenheimer', 2, 2, 100)]);
+    mockIsGroupAdmin.mockResolvedValue(true);
+    mockResetGroupVotes.mockResolvedValue(undefined);
+
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      const confirm = buttons?.find((b) => b.text === 'Réinitialiser');
+      confirm?.onPress?.();
+    });
+
+    const { getByText } = render(<MatchesScreen />);
+
+    await waitFor(() => expect(getByText('Réinitialiser')).toBeTruthy());
+
+    fireEvent.press(getByText('Réinitialiser'));
+
+    await waitFor(() => expect(mockResetGroupVotes).toHaveBeenCalledWith('g1'));
+    expect(alertSpy).toHaveBeenCalled();
+    expect(mockGetGroupMatches).toHaveBeenCalledTimes(2);
   });
 });
