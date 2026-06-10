@@ -26,6 +26,8 @@ export function intersectGenreIds(groupGenreIds: number[], memberGenreIds: numbe
  * hors filtre 18+).
  */
 export async function getGroupRecommendations(groupId: string, count: number = DEFAULT_COUNT): Promise<Movie[]> {
+  if (count <= 0) return [];
+
   const { data: group, error: groupError } = await supabase
     .from('groups')
     .select('genres, age_rating')
@@ -60,5 +62,6 @@ export async function getGroupRecommendations(groupId: string, count: number = D
     ? await tmdb.getMoviesByGenres(targetGenreIds, count, { includeAdult })
     : await tmdb.getPopularMovies(count);
 
-  return movies.filter(m => includeAdult || !m.adult);
+  const filtered = movies.filter(m => includeAdult || !m.adult);
+  return Array.from(new Map(filtered.map(m => [m.id, m])).values());
 }

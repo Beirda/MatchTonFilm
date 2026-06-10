@@ -106,4 +106,20 @@ describe('getGroupRecommendations', () => {
 
     expect(result).toEqual([movie(5, false)]);
   });
+
+  it('renvoie [] sans appeler TMDB si count <= 0', async () => {
+    const result = await getGroupRecommendations('g1', 0);
+
+    expect(result).toEqual([]);
+    expect(mockSingle).not.toHaveBeenCalled();
+  });
+
+  it('déduplique les films par id', async () => {
+    mockSingle.mockResolvedValue({ data: { genres: ['Action'], age_rating: 'Tous' }, error: null });
+    mockGetMoviesByGenres.mockResolvedValue([movie(1), movie(1), movie(2)]);
+
+    const result = await getGroupRecommendations('g1');
+
+    expect(result).toEqual([movie(1), movie(2)]);
+  });
 });
