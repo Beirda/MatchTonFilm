@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -98,6 +98,13 @@ export default function GroupDetailScreen() {
         {group.age_rating} · {group.language}
         {group.genres.length > 0 ? ` · ${group.genres.join(', ')}` : ''}
       </ThemedText>
+
+      <Pressable
+        style={({ pressed }) => [styles.swipeBtn, pressed && styles.swipeBtnPressed]}
+        onPress={() => router.push(`/groups/${id}/swipe`)}
+      >
+        <Text style={styles.swipeBtnText}>Lancer une session</Text>
+      </Pressable>
     </ThemedView>
   );
 }
@@ -149,6 +156,21 @@ function makeStyles(
       fontSize: 15,
       color: colors.text,
       lineHeight: 22,
+    },
+    swipeBtn: {
+      backgroundColor: colors.red,
+      borderRadius: 999,
+      paddingVertical: 16,
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    swipeBtnPressed: {
+      opacity: 0.85,
+    },
+    swipeBtnText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '700',
     },
   });
 }

@@ -50,6 +50,14 @@ export class TMDBClient {
     }
 
     /**
+     * Récupère un film à partir d'un id, avec son casting et ses vidéos
+     * @param movieId id du film recherché
+     */
+    public async getMovieDetails(movieId: number): Promise<Movie> {
+        return this.request<Movie>(`/movie/${movieId}?language=fr-FR&append_to_response=credits,videos`);
+    }
+
+    /**
      * Récupère une page précise des films populaire
      * @param page numéro de page à récupérer
      */

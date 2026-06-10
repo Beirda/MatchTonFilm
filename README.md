@@ -115,6 +115,24 @@ groupe `18+` passe `include_adult=true` à `discoverMoviesByGenres`/`getMoviesBy
 ([`wrappers/TMDBClient.ts`](wrappers/TMDBClient.ts)) ; un post-filtre exclut par sécurité
 tout résultat `adult: true` pour les autres groupes.
 
+## Swipe (cartes) — GH-7
+
+[`app/groups/[id]/swipe.tsx`](app/groups/[id]/swipe.tsx) propose une interface type Tinder
+pour découvrir les films d'un groupe, accessible via le bouton « Lancer une session » sur
+la page de détail du groupe.
+
+- Les films proposés viennent de [`getGroupRecommendations(groupId, 10)`](lib/recommendations.ts)
+  (GH-6), qui croise les genres filtrés du groupe et les préférences cumulées des membres.
+- Chaque film est complété via `tmdb.getMovieDetails(id)` (nouvelle méthode du
+  [`TMDBClient`](wrappers/TMDBClient.ts), `append_to_response=credits,videos`) pour
+  afficher l'affiche, les genres, le casting principal, le résumé et la bande-annonce.
+- [`components/swipe/swipe-deck.tsx`](components/swipe/swipe-deck.tsx) gère le swipe
+  (`react-native-gesture-handler` + `react-native-reanimated`) : glisser à droite/gauche
+  ou utiliser les boutons ❤️ / ✕ sous la pile. Le like/dislike n'est pour l'instant qu'un
+  callback local — la persistance des votes arrive en GH-8.
+- [`components/swipe/trailer-modal.tsx`](components/swipe/trailer-modal.tsx) ouvre la
+  bande-annonce YouTube dans une `WebView` (`react-native-webview`) plein écran.
+
 ## Get a fresh project
 
 When you're ready, run:
