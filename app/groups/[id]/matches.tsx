@@ -256,25 +256,28 @@ export default function MatchesScreen() {
           }}
           ListFooterComponent={
             isAdmin ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.resetBtn,
-                  (pressed || resetting) && styles.resetBtnPressed,
-                ]}
-                onPress={onResetVotes}
-                disabled={resetting}
-                accessibilityRole="button"
-                accessibilityLabel="Réinitialiser les votes"
-              >
-                {resetting ? (
-                  <ActivityIndicator color={colors.text} size="small" />
-                ) : (
-                  <>
-                    <MaterialIcons name="refresh" size={19} color={colors.text} />
-                    <ThemedText style={styles.resetBtnText}>Réinitialiser</ThemedText>
-                  </>
-                )}
-              </Pressable>
+              <Animated.View entering={FadeInDown.delay(rest.length * 50).springify()}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.resetBtn,
+                    (pressed || resetting) && styles.resetBtnPressed,
+                  ]}
+                  onPress={onResetVotes}
+                  disabled={resetting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Réinitialiser les votes"
+                  accessibilityHint="Supprime les votes du groupe et permet de relancer un nouveau cycle"
+                >
+                  {resetting ? (
+                    <ActivityIndicator color={colors.text} size="small" />
+                  ) : (
+                    <>
+                      <MaterialIcons name="refresh" size={19} color={colors.text} />
+                      <ThemedText style={styles.resetBtnText}>Réinitialiser</ThemedText>
+                    </>
+                  )}
+                </Pressable>
+              </Animated.View>
             ) : null
           }
         />
@@ -538,6 +541,11 @@ function makeStyles(
       borderRadius: 999,
       paddingVertical: 16,
       marginTop: 22,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: scheme === 'dark' ? 0.3 : 0.08,
+      shadowRadius: 10,
+      elevation: 2,
     },
     resetBtnPressed: {
       opacity: 0.7,
