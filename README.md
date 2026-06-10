@@ -96,6 +96,26 @@ Côté [`app/groups/join.tsx`](app/groups/join.tsx) :
 - Un lien sans paramètre `code`, mal formé, ou avec un code de longueur/format invalide
   est rejeté avec le message « Ce lien d'invitation est invalide. ».
 
+## Swipe (cartes) — GH-7
+
+[`app/groups/[id]/swipe.tsx`](app/groups/[id]/swipe.tsx) propose une interface type Tinder
+pour découvrir les films d'un groupe, accessible via le bouton « Lancer une session » sur
+la page de détail du groupe.
+
+- Les genres du groupe (noms français de [`constants/genres.ts`](constants/genres.ts)) sont
+  comparés (insensible à la casse) à `tmdb.getGenres()` pour récupérer les ids TMDB
+  correspondants, puis `tmdb.getMoviesByGenres(ids, 10)` renvoie les films à proposer
+  (fallback sur `tmdb.getPopularMovies(10)` si aucun genre ne correspond).
+- Chaque film est complété via `tmdb.getMovieDetails(id)` (nouvelle méthode du
+  [`TMDBClient`](wrappers/TMDBClient.ts), `append_to_response=credits,videos`) pour
+  afficher l'affiche, les genres, le casting principal, le résumé et la bande-annonce.
+- [`components/swipe/swipe-deck.tsx`](components/swipe/swipe-deck.tsx) gère le swipe
+  (`react-native-gesture-handler` + `react-native-reanimated`) : glisser à droite/gauche
+  ou utiliser les boutons ❤️ / ✕ sous la pile. Le like/dislike n'est pour l'instant qu'un
+  callback local — la persistance des votes arrive en GH-8.
+- [`components/swipe/trailer-modal.tsx`](components/swipe/trailer-modal.tsx) ouvre la
+  bande-annonce YouTube dans une `WebView` (`react-native-webview`) plein écran.
+
 ## Get a fresh project
 
 When you're ready, run:
