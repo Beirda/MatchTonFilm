@@ -50,17 +50,24 @@ export async function getGroupRecommendations(groupId: string, count: number = D
     memberGenreIds = [...new Set<number>((userGenres ?? []).map((g: { tmdb_genre_id: number }) => g.tmdb_genre_id))];
   }
 
-  const groupGenreIds = (group.genres ?? [])
-    .map((name: string) => GENRE_TMDB_IDS[name])
-    .filter((id: number | undefined): id is number => id !== undefined);
+  const groupGenreIds = [...new Set<number>(
+    (group.genres ?? [])
+      .map((name: string) => GENRE_TMDB_IDS[name])
+      .filter((id: number | undefined): id is number => id !== undefined)
+  )];
 
   const targetGenreIds = intersectGenreIds(groupGenreIds, memberGenreIds);
 
   const includeAdult = group.age_rating === '18+';
 
-  const movies = targetGenreIds.length > 0
-    ? await tmdb.getMoviesByGenres(targetGenreIds, count, { includeAdult })
-    : await tmdb.getPopularMovies(count);
+  let movies: Movie[];
+  try {
+    movies = targetGenreIds.length > 0
+      ? await tmdb.getMoviesByGenres(targetGenreIds, count, { includeAdult })
+      : await tmdb.getPopularMovies(count);
+  } catch {
+    return [];
+  }
 
   const filtered = movies.filter(m => includeAdult || !m.adult);
   return Array.from(new Map(filtered.map(m => [m.id, m])).values());

@@ -122,4 +122,21 @@ describe('getGroupRecommendations', () => {
 
     expect(result).toEqual([movie(1), movie(2)]);
   });
+
+  it('déduplique les ids de genre du groupe (Biopic/Drame, Policier/Crime)', async () => {
+    mockSingle.mockResolvedValue({ data: { genres: ['Biopic', 'Drame', 'Policier', 'Crime'], age_rating: 'Tous' }, error: null });
+
+    await getGroupRecommendations('g1');
+
+    expect(mockGetMoviesByGenres).toHaveBeenCalledWith([18, 80], 20, { includeAdult: false });
+  });
+
+  it("renvoie [] si l'appel TMDB échoue", async () => {
+    mockSingle.mockResolvedValue({ data: { genres: ['Action'], age_rating: 'Tous' }, error: null });
+    mockGetMoviesByGenres.mockRejectedValue(new Error('TMDB Error Forbidden'));
+
+    const result = await getGroupRecommendations('g1');
+
+    expect(result).toEqual([]);
+  });
 });
