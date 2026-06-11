@@ -9,6 +9,10 @@ jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn() },
   useLocalSearchParams: () => ({ id: 'g1' }),
 }));
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 34, left: 0, right: 0 }),
+  SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 // react-native-webview nécessite un module natif indisponible sous Jest ;
 // le composant n'est de toute façon rendu que lorsqu'une bande-annonce est ouverte.
@@ -100,6 +104,21 @@ describe('SwipeScreen', () => {
     const { getByText } = render(<SwipeScreen />);
 
     await waitFor(() => expect(getByText("Plus de films pour l'instant")).toBeTruthy());
+  });
+
+  it('ouvre la fiche complète du film depuis la carte', async () => {
+    mockSingle.mockResolvedValue({
+      data: { name: 'Ciné Club', emoji: '🎬' },
+    });
+    mockGetGroupRecommendations.mockResolvedValue([{ id: 1 }]);
+    mockGetMovieDetails.mockResolvedValue(buildMovie(1, 'Dune'));
+
+    const { getByText, getByLabelText } = render(<SwipeScreen />);
+    await waitFor(() => expect(getByText('Dune')).toBeTruthy());
+
+    fireEvent.press(getByLabelText('Voir la fiche complète de Dune'));
+
+    await waitFor(() => expect(getByText('Synopsis')).toBeTruthy());
   });
 
   it('enregistre le vote du groupe lors d\'un swipe', async () => {
