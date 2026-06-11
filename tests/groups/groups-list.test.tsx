@@ -3,7 +3,13 @@ import { render, waitFor, fireEvent } from '@testing-library/react-native';
 
 import type { Group } from '@/types/group';
 
-jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
+jest.mock('expo-router', () => ({
+  router: { push: jest.fn() },
+  useFocusEffect: (cb: () => void) => {
+    const { useEffect } = require('react');
+    useEffect(cb, []);
+  },
+}));
 jest.mock('@/lib/groups', () => ({ fetchUserGroups: jest.fn() }));
 
 import { fetchUserGroups } from '@/lib/groups';
