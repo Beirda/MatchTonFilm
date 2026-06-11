@@ -10,14 +10,14 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getGroupRecommendations } from '@/lib/recommendations';
 import { supabase } from '@/lib/supabase';
 import { tmdb } from '@/lib/tmdb';
-import { saveVote } from '@/lib/votes';
+import { getUserVotedMovieIds, saveVote } from '@/lib/votes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import SwipeDeck, { type SwipeDeckHandle, type SwipeDirection } from '@/components/swipe/swipe-deck';
 import TrailerModal from '@/components/swipe/trailer-modal';
 import type { Movie } from '@/wrappers/TMDBTypes';
 
-const MOVIE_COUNT = 10;
+const MOVIE_COUNT = 30;
 
 type GroupInfo = { name: string; emoji: string };
 
@@ -39,13 +39,16 @@ export default function SwipeScreen() {
 
     (async () => {
       try {
-        const [{ data }, list] = await Promise.all([
+        const [{ data }, list, votedIds] = await Promise.all([
           supabase.from('groups').select('name, emoji').eq('id', id).single(),
           getGroupRecommendations(id, MOVIE_COUNT),
+          getUserVotedMovieIds(id),
         ]);
         if (active) setGroup(data as unknown as GroupInfo | null);
 
-        const detailed = await Promise.all(list.map((m) => tmdb.getMovieDetails(m.id)));
+        const voted = new Set(votedIds);
+        const remaining = list.filter((m) => !voted.has(m.id));
+        const detailed = await Promise.all(remaining.map((m) => tmdb.getMovieDetails(m.id)));
         if (active) setMovies(detailed);
       } catch {
         if (active) setError('Impossible de charger les films.');

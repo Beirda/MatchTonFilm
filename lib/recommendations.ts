@@ -24,6 +24,11 @@ export function intersectGenreIds(groupGenreIds: number[], memberGenreIds: numbe
  * genres filtrés du groupe (GH-4) et les genres préférés de ses membres
  * (GH-2), en respectant la limite d'âge du groupe (pas de contenu adulte
  * hors filtre 18+).
+ *
+ * Les genres des membres sont lus via la RPC `get_group_member_genres`
+ * (SECURITY DEFINER) : la RLS de `user_genres` ne laisse voir que ses
+ * propres lignes, et une lecture directe donnait un pool différent par
+ * membre — donc aucun film en commun à matcher.
  */
 export async function getGroupRecommendations(groupId: string, count: number = DEFAULT_COUNT): Promise<Movie[]> {
   if (count <= 0) return [];
@@ -35,20 +40,11 @@ export async function getGroupRecommendations(groupId: string, count: number = D
     .single();
   if (groupError || !group) return [];
 
-  const { data: members } = await supabase
-    .from('group_members')
-    .select('user_id')
-    .eq('group_id', groupId);
-  const memberIds = (members ?? []).map((m: { user_id: string }) => m.user_id);
-
-  let memberGenreIds: number[] = [];
-  if (memberIds.length > 0) {
-    const { data: userGenres } = await supabase
-      .from('user_genres')
-      .select('tmdb_genre_id')
-      .in('user_id', memberIds);
-    memberGenreIds = [...new Set<number>((userGenres ?? []).map((g: { tmdb_genre_id: number }) => g.tmdb_genre_id))];
-  }
+  const { data: memberGenres } = await supabase
+    .rpc('get_group_member_genres', { p_group_id: groupId });
+  const memberGenreIds = [...new Set<number>(
+    ((memberGenres ?? []) as { tmdb_genre_id: number }[]).map(g => g.tmdb_genre_id)
+  )];
 
   const groupGenreIds = [...new Set<number>(
     (group.genres ?? [])

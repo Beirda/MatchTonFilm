@@ -26,6 +26,25 @@ export async function saveVote(groupId: string, movieId: number, vote: VoteValue
 }
 
 /**
+ * Liste les ids de films sur lesquels l'utilisateur connecté a déjà voté
+ * dans ce groupe — permet de reprendre une session de swipe là où elle
+ * s'était arrêtée au lieu de revoir les mêmes films.
+ */
+export async function getUserVotedMovieIds(groupId: string): Promise<number[]> {
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth.user;
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from('votes')
+    .select('movie_id')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id);
+
+  return ((data ?? []) as { movie_id: number }[]).map(v => v.movie_id);
+}
+
+/**
  * Indique si l'utilisateur connecté est admin du groupe donné.
  */
 export async function isGroupAdmin(groupId: string): Promise<boolean> {
