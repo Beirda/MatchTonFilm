@@ -1,20 +1,12 @@
 const mockSingle = jest.fn();
-const mockMembers = jest.fn();
-const mockUserGenres = jest.fn();
+const mockRpc = jest.fn();
 const mockGetMoviesByGenres = jest.fn();
 const mockGetPopularMovies = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
-    from: (table: string) => {
-      if (table === 'groups') {
-        return { select: () => ({ eq: () => ({ single: () => mockSingle() }) }) };
-      }
-      if (table === 'group_members') {
-        return { select: () => ({ eq: () => mockMembers() }) };
-      }
-      return { select: () => ({ in: () => mockUserGenres() }) };
-    },
+    from: () => ({ select: () => ({ eq: () => ({ single: () => mockSingle() }) }) }),
+    rpc: (fn: string, args: unknown) => mockRpc(fn, args),
   },
 }));
 
@@ -52,8 +44,7 @@ describe('intersectGenreIds', () => {
 describe('getGroupRecommendations', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockMembers.mockResolvedValue({ data: [{ user_id: 'u1' }, { user_id: 'u2' }], error: null });
-    mockUserGenres.mockResolvedValue({ data: [], error: null });
+    mockRpc.mockResolvedValue({ data: [], error: null });
     mockGetMoviesByGenres.mockResolvedValue([]);
     mockGetPopularMovies.mockResolvedValue([]);
   });
@@ -67,18 +58,18 @@ describe('getGroupRecommendations', () => {
 
   it("interroge TMDB sur l'intersection genres groupe / préférences membres", async () => {
     mockSingle.mockResolvedValue({ data: { genres: ['Action', 'Comédie'], age_rating: '12+' }, error: null });
-    mockUserGenres.mockResolvedValue({ data: [{ tmdb_genre_id: 28 }, { tmdb_genre_id: 53 }], error: null });
+    mockRpc.mockResolvedValue({ data: [{ tmdb_genre_id: 28 }, { tmdb_genre_id: 53 }], error: null });
     mockGetMoviesByGenres.mockResolvedValue([movie(1)]);
 
     const result = await getGroupRecommendations('g1', 5);
 
+    expect(mockRpc).toHaveBeenCalledWith('get_group_member_genres', { p_group_id: 'g1' });
     expect(mockGetMoviesByGenres).toHaveBeenCalledWith([28], 5, { includeAdult: false });
     expect(result).toEqual([movie(1)]);
   });
 
   it("retombe sur les films populaires si aucun genre n'est défini", async () => {
     mockSingle.mockResolvedValue({ data: { genres: [], age_rating: 'Tous' }, error: null });
-    mockMembers.mockResolvedValue({ data: [], error: null });
     mockGetPopularMovies.mockResolvedValue([movie(2)]);
 
     const result = await getGroupRecommendations('g1', 5);

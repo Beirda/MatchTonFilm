@@ -310,6 +310,27 @@ $$;
 grant execute on function reset_group_votes(uuid) to authenticated;
 
 
+-- -----------------------------------------------------------------------------
+-- GH-6 : get_group_member_genres
+-- RPC SECURITY DEFINER : agrège les genres préférés de tous les membres d'un
+-- groupe. Nécessaire car la RLS de user_genres limite le SELECT à ses propres
+-- lignes — sans cette RPC, chaque membre calculait un pool de films différent
+-- et aucun match n'était possible. Réservée aux membres du groupe.
+-- -----------------------------------------------------------------------------
+create or replace function get_group_member_genres(p_group_id uuid)
+returns table (tmdb_genre_id integer)
+language sql security definer set search_path = ''
+as $$
+  select distinct ug.tmdb_genre_id
+  from public.user_genres ug
+  join public.group_members gm on gm.user_id = ug.user_id
+  where gm.group_id = p_group_id
+    and public.is_group_member(p_group_id);
+$$;
+
+grant execute on function get_group_member_genres(uuid) to authenticated;
+
+
 -- =============================================================================
 -- INDEXES (performance)
 -- =============================================================================
