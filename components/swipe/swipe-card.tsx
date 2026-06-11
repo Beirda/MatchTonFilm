@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { type AnimatedStyle } from 'react-native-reanimated';
@@ -17,11 +18,12 @@ const CAST_COUNT = 4;
 type Props = Readonly<{
   movie: Movie;
   onTrailerPress: (videoKey: string) => void;
+  onDetailsPress?: (movie: Movie) => void;
   likeStyle?: AnimatedStyle;
   nopeStyle?: AnimatedStyle;
 }>;
 
-export default function SwipeCard({ movie, onTrailerPress, likeStyle, nopeStyle }: Props) {
+export default function SwipeCard({ movie, onTrailerPress, onDetailsPress, likeStyle, nopeStyle }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const styles = makeStyles(colors, colorScheme);
@@ -42,6 +44,17 @@ export default function SwipeCard({ movie, onTrailerPress, likeStyle, nopeStyle 
         />
       ) : (
         <View style={[styles.poster, styles.posterPlaceholder]} />
+      )}
+
+      {onDetailsPress && (
+        <Pressable
+          style={({ pressed }) => [styles.infoBtn, pressed && styles.infoBtnPressed]}
+          onPress={() => onDetailsPress(movie)}
+          accessibilityRole="button"
+          accessibilityLabel={`Voir la fiche complète de ${movie.title}`}
+        >
+          <MaterialIcons name="info-outline" size={20} color="#fff" />
+        </Pressable>
       )}
 
       {likeStyle && (
@@ -196,6 +209,21 @@ function makeStyles(
       color: '#fff',
       fontSize: 13,
       fontWeight: '700',
+    },
+    infoBtn: {
+      position: 'absolute',
+      top: 14,
+      right: 14,
+      zIndex: 12,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0,0,0,0.45)',
+    },
+    infoBtnPressed: {
+      opacity: 0.7,
     },
     stamp: {
       position: 'absolute',

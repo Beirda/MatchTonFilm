@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -13,6 +14,7 @@ import { tmdb } from '@/lib/tmdb';
 import { saveVote } from '@/lib/votes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import MovieDetailsModal from '@/components/swipe/movie-details-modal';
 import SwipeDeck, { type SwipeDeckHandle, type SwipeDirection } from '@/components/swipe/swipe-deck';
 import TrailerModal from '@/components/swipe/trailer-modal';
 import type { Movie } from '@/wrappers/TMDBTypes';
@@ -26,12 +28,14 @@ export default function SwipeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const styles = makeStyles(colors, colorScheme);
+  const insets = useSafeAreaInsets();
 
   const [group, setGroup] = useState<GroupInfo | null>(null);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const [detailsMovie, setDetailsMovie] = useState<Movie | null>(null);
   const deckRef = useRef<SwipeDeckHandle>(null);
 
   useEffect(() => {
@@ -66,7 +70,7 @@ export default function SwipeScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Pressable
           style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
           onPress={() => router.back()}
@@ -110,6 +114,7 @@ export default function SwipeScreen() {
               movies={movies}
               onSwipe={handleSwipe}
               onTrailerPress={setTrailerKey}
+              onDetailsPress={setDetailsMovie}
             />
           </View>
 
@@ -134,6 +139,14 @@ export default function SwipeScreen() {
         </>
       )}
 
+      <MovieDetailsModal
+        movie={detailsMovie}
+        onClose={() => setDetailsMovie(null)}
+        onTrailerPress={(key) => {
+          setDetailsMovie(null);
+          setTrailerKey(key);
+        }}
+      />
       <TrailerModal videoKey={trailerKey} onClose={() => setTrailerKey(null)} />
     </ThemedView>
   );
