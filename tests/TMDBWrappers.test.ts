@@ -252,7 +252,7 @@ test("discoverMoviesByGenres joins ids and uses page 1 by default", async () => 
   assert.deepEqual(result, payload);
   assert.equal(
     String(latestCall().input),
-    `${BASE_URL}/discover/movie?with_genres=28,12&page=1&sort_by=popularity.desc&language=fr-FR`
+    `${BASE_URL}/discover/movie?with_genres=28,12&page=1&sort_by=popularity.desc&vote_count.gte=200&language=fr-FR`
   );
 });
 
@@ -272,7 +272,7 @@ test("discoverMoviesByGenres forwards a custom page number", async () => {
   assert.deepEqual(result, payload);
   assert.equal(
     String(latestCall().input),
-    `${BASE_URL}/discover/movie?with_genres=16,18&page=3&sort_by=popularity.desc&language=fr-FR`
+    `${BASE_URL}/discover/movie?with_genres=16,18&page=3&sort_by=popularity.desc&vote_count.gte=200&language=fr-FR`
   );
 });
 
@@ -292,7 +292,7 @@ test("discoverMoviesByGenres appends include_adult when requested", async () => 
   assert.deepEqual(result, payload);
   assert.equal(
     String(latestCall().input),
-    `${BASE_URL}/discover/movie?with_genres=27&page=1&sort_by=popularity.desc&language=fr-FR&include_adult=true`
+    `${BASE_URL}/discover/movie?with_genres=27&page=1&sort_by=popularity.desc&vote_count.gte=200&language=fr-FR&include_adult=true`
   );
 });
 
@@ -336,4 +336,44 @@ test("getMoviesByGenres stops when the genre discovery reaches the last page", a
 
   assert.deepEqual(result, [sampleMovie(21)]);
   assert.equal(fetchCalls.length, 1);
+});
+
+test("getRecommendations targets the recommendations endpoint", async () => {
+  const client = new TMDBClient(API_KEY);
+  const payload = {
+    page: 1,
+    results: [sampleMovie(31)],
+    total_pages: 1,
+    total_results: 1,
+  };
+
+  installFetchMock(createJsonResponse(payload));
+
+  const result = await client.getRecommendations(550);
+
+  assert.deepEqual(result, payload);
+  assert.equal(
+    String(latestCall().input),
+    `${BASE_URL}/movie/550/recommendations?page=1&language=fr-FR`
+  );
+});
+
+test("getRecommendations forwards a custom page number", async () => {
+  const client = new TMDBClient(API_KEY);
+  const payload = {
+    page: 2,
+    results: [sampleMovie(32)],
+    total_pages: 3,
+    total_results: 6,
+  };
+
+  installFetchMock(createJsonResponse(payload));
+
+  const result = await client.getRecommendations(550, 2);
+
+  assert.deepEqual(result, payload);
+  assert.equal(
+    String(latestCall().input),
+    `${BASE_URL}/movie/550/recommendations?page=2&language=fr-FR`
+  );
 });

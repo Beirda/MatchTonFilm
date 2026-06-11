@@ -36,6 +36,7 @@ jest.mock('@/lib/tmdb', () => {
       getPopularMovies: jest.fn().mockResolvedValue(movies),
       searchMovie: jest.fn().mockResolvedValue({ results: [movies[0]] }),
       getSimilar: jest.fn().mockResolvedValue({ results: [] }),
+      getRecommendations: jest.fn().mockResolvedValue({ results: [] }),
     },
   };
 });
@@ -48,6 +49,8 @@ describe('FilmStep', () => {
   beforeEach(() => {
     mockOnToggle.mockClear();
     jest.requireMock('@/lib/tmdb').tmdb.getSimilar.mockClear();
+    jest.requireMock('@/lib/tmdb').tmdb.getRecommendations.mockClear();
+    jest.requireMock('@/lib/tmdb').tmdb.getRecommendations.mockResolvedValue({ results: [] });
   });
 
   it('appelle getMoviesByGenres avec les ids des genres au montage', async () => {
@@ -76,8 +79,18 @@ describe('FilmStep', () => {
     );
   });
 
-  it('appelle getSimilar apres selection', async () => {
+  it('appelle getRecommendations apres selection', async () => {
     const { tmdb } = jest.requireMock('@/lib/tmdb');
+    const { findByTestId } = render(
+      <FilmStep genres={mockGenres} selected={[]} onToggle={mockOnToggle} />
+    );
+    fireEvent.press(await findByTestId('film-item-1'));
+    await waitFor(() => expect(tmdb.getRecommendations).toHaveBeenCalledWith(1));
+  });
+
+  it('retombe sur getSimilar si aucune recommandation', async () => {
+    const { tmdb } = jest.requireMock('@/lib/tmdb');
+    tmdb.getRecommendations.mockResolvedValue({ results: [] });
     const { findByTestId } = render(
       <FilmStep genres={mockGenres} selected={[]} onToggle={mockOnToggle} />
     );
@@ -85,13 +98,27 @@ describe('FilmStep', () => {
     await waitFor(() => expect(tmdb.getSimilar).toHaveBeenCalledWith(1));
   });
 
-  it('ne rappelle pas getSimilar a la deselection', async () => {
+  it("n'appelle pas getSimilar quand les recommandations suffisent", async () => {
+    const { tmdb } = jest.requireMock('@/lib/tmdb');
+    tmdb.getRecommendations.mockResolvedValue({
+      results: [{ id: 9, title: 'Blade Runner', poster_path: null }],
+    });
+    const { findByTestId } = render(
+      <FilmStep genres={mockGenres} selected={[]} onToggle={mockOnToggle} />
+    );
+    fireEvent.press(await findByTestId('film-item-1'));
+    await waitFor(() => expect(tmdb.getRecommendations).toHaveBeenCalledWith(1));
+    expect(tmdb.getSimilar).not.toHaveBeenCalled();
+  });
+
+  it('ne rappelle pas les recommandations a la deselection', async () => {
     const { tmdb } = jest.requireMock('@/lib/tmdb');
     const selected = [{ tmdbId: 1, title: 'Dune', posterPath: '/dune.jpg' }];
     const { findByTestId } = render(
       <FilmStep genres={mockGenres} selected={selected} onToggle={mockOnToggle} />
     );
     fireEvent.press(await findByTestId('film-item-1'));
-    await waitFor(() => expect(tmdb.getSimilar).not.toHaveBeenCalled());
+    await waitFor(() => expect(tmdb.getRecommendations).not.toHaveBeenCalled());
+    expect(tmdb.getSimilar).not.toHaveBeenCalled();
   });
 });

@@ -19,6 +19,7 @@ jest.mock('@/lib/tmdb', () => ({
     getPopularMovies: jest.fn().mockResolvedValue([]),
     searchMovie: jest.fn().mockResolvedValue({ results: [] }),
     getSimilar: jest.fn().mockResolvedValue({ results: [] }),
+    getRecommendations: jest.fn().mockResolvedValue({ results: [] }),
   },
 }));
 

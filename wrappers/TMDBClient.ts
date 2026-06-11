@@ -108,7 +108,10 @@ export class TMDBClient {
     }
 
     /**
-     * Récupère une page par rapport à une liste de genre
+     * Récupère une page par rapport à une liste de genre.
+     * Le seuil `vote_count.gte` écarte les films obscurs mais localement très
+     * populaires (le tri par popularité seul renvoyait surtout des productions
+     * régionales peu votées, sans rapport avec les préférences).
      * @param genreIds liste d'ids de genre
      * @param page index de page
      * @param options.includeAdult inclut le contenu réservé aux adultes (défaut : false)
@@ -125,7 +128,7 @@ export class TMDBClient {
         const adultParam = options.includeAdult ? "&include_adult=true" : "";
 
         return this.request(
-            `/discover/movie?with_genres=${genreIdsParam}&page=${page}&sort_by=popularity.desc&language=fr-FR${adultParam}`
+            `/discover/movie?with_genres=${genreIdsParam}&page=${page}&sort_by=popularity.desc&vote_count.gte=200&language=fr-FR${adultParam}`
         );
     }
 
@@ -174,6 +177,19 @@ export class TMDBClient {
     async getSimilar(movieId: number, page = 1): Promise<TMDBPaginatedResponse<Movie>> {
         return this.request<TMDBPaginatedResponse<Movie>>(
             `/movie/${movieId}/similar?page=${page}&language=fr-FR`
+        );
+    }
+
+    /**
+     * Récupère les recommandations TMDB pour un film donné.
+     * Basées sur le comportement des utilisateurs TMDB, elles sont bien plus
+     * pertinentes que `/similar` (simple correspondance genres/mots-clés).
+     * @param movieId id du film
+     * @param page numéro de page
+     */
+    async getRecommendations(movieId: number, page = 1): Promise<TMDBPaginatedResponse<Movie>> {
+        return this.request<TMDBPaginatedResponse<Movie>>(
+            `/movie/${movieId}/recommendations?page=${page}&language=fr-FR`
         );
     }
 }
