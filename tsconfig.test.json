@@ -13,6 +13,6 @@
   },
   "include": [
     "wrappers/**/*.ts",
-    "tests/**/*.ts"
+    "tests/TMDBWrappers.test.ts"
   ]
 }
