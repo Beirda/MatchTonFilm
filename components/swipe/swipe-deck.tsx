@@ -29,10 +29,11 @@ type Props = Readonly<{
   movies: Movie[];
   onSwipe: (movie: Movie, direction: SwipeDirection) => void;
   onTrailerPress: (videoKey: string) => void;
+  onDetailsPress?: (movie: Movie) => void;
 }>;
 
 const SwipeDeck = forwardRef<SwipeDeckHandle, Props>(function SwipeDeck(
-  { movies, onSwipe, onTrailerPress },
+  { movies, onSwipe, onTrailerPress, onDetailsPress },
   ref,
 ) {
   const { width: screenWidth } = useWindowDimensions();
@@ -115,6 +116,7 @@ const SwipeDeck = forwardRef<SwipeDeckHandle, Props>(function SwipeDeck(
             <SwipeCard
               movie={current}
               onTrailerPress={onTrailerPress}
+              onDetailsPress={onDetailsPress}
               likeStyle={likeStyle}
               nopeStyle={nopeStyle}
             />

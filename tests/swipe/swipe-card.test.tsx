@@ -74,4 +74,18 @@ describe('SwipeCard', () => {
     const { queryByText } = render(<SwipeCard movie={movie} onTrailerPress={jest.fn()} />);
     expect(queryByText('Bande-annonce')).toBeNull();
   });
+
+  it('appelle onDetailsPress au tap sur le bouton info', () => {
+    const onDetailsPress = jest.fn();
+    const { getByLabelText } = render(
+      <SwipeCard movie={MOVIE} onTrailerPress={jest.fn()} onDetailsPress={onDetailsPress} />,
+    );
+    fireEvent.press(getByLabelText('Voir la fiche complète de Dune'));
+    expect(onDetailsPress).toHaveBeenCalledWith(MOVIE);
+  });
+
+  it("n'affiche pas le bouton info sans onDetailsPress", () => {
+    const { queryByLabelText } = render(<SwipeCard movie={MOVIE} onTrailerPress={jest.fn()} />);
+    expect(queryByLabelText('Voir la fiche complète de Dune')).toBeNull();
+  });
 });

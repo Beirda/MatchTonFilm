@@ -11,6 +11,24 @@ type Props = Readonly<{
   onClose: () => void;
 }>;
 
+// L'iframe est servie depuis une page avec baseUrl YouTube : charger
+// directement l'URL /embed dans la WebView part sans Referer valide et
+// YouTube refuse la lecture (« Error 153 — player configuration error »).
+function buildEmbedHtml(videoKey: string): string {
+  return `<!DOCTYPE html><html><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden}</style>
+  </head><body>
+    <iframe
+      width="100%" height="100%"
+      src="https://www.youtube.com/embed/${videoKey}?playsinline=1&autoplay=1&rel=0"
+      frameborder="0"
+      allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+      allowfullscreen
+    ></iframe>
+  </body></html>`;
+}
+
 export default function TrailerModal({ videoKey, onClose }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -30,7 +48,11 @@ export default function TrailerModal({ videoKey, onClose }: Props) {
         {videoKey && (
           <WebView
             style={styles.webview}
-            source={{ uri: `https://www.youtube.com/embed/${videoKey}?playsinline=1` }}
+            originWhitelist={['*']}
+            source={{
+              html: buildEmbedHtml(videoKey),
+              baseUrl: 'https://www.youtube.com',
+            }}
             allowsFullscreenVideo
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
