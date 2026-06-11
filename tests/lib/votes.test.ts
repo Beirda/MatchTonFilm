@@ -1,6 +1,7 @@
 const mockGetUser = jest.fn();
 const mockUpsert = jest.fn();
 const mockSingle = jest.fn();
+const mockVotesList = jest.fn();
 const mockRpc = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
@@ -8,13 +9,22 @@ jest.mock('@/lib/supabase', () => ({
     auth: { getUser: () => mockGetUser() },
     from: () => ({
       upsert: (...args: unknown[]) => mockUpsert(...args),
-      select: () => ({ eq: () => ({ eq: () => ({ single: () => mockSingle() }) }) }),
+      select: () => ({
+        eq: () => ({
+          // Le 2e .eq() est soit attendu directement (liste de votes),
+          // soit suivi de .single() (rôle admin) : on expose les deux.
+          eq: () => ({
+            single: () => mockSingle(),
+            then: (resolve: (v: unknown) => void) => resolve(mockVotesList()),
+          }),
+        }),
+      }),
     }),
     rpc: (...args: unknown[]) => mockRpc(...args),
   },
 }));
 
-import { isGroupAdmin, resetGroupVotes, saveVote } from '@/lib/votes';
+import { getUserVotedMovieIds, isGroupAdmin, resetGroupVotes, saveVote } from '@/lib/votes';
 
 describe('saveVote', () => {
   beforeEach(() => {
@@ -45,6 +55,32 @@ describe('saveVote', () => {
     mockGetUser.mockRejectedValue(new Error('offline'));
 
     await expect(saveVote('g1', 42, 'like')).resolves.toBeUndefined();
+  });
+});
+
+describe('getUserVotedMovieIds', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("retourne les ids des films déjà votés par l'utilisateur", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    mockVotesList.mockReturnValue({ data: [{ movie_id: 42 }, { movie_id: 7 }], error: null });
+
+    await expect(getUserVotedMovieIds('g1')).resolves.toEqual([42, 7]);
+  });
+
+  it('retourne [] si aucun utilisateur connecté', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+
+    await expect(getUserVotedMovieIds('g1')).resolves.toEqual([]);
+  });
+
+  it('retourne [] si la requête ne renvoie rien', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    mockVotesList.mockReturnValue({ data: null, error: new Error('boom') });
+
+    await expect(getUserVotedMovieIds('g1')).resolves.toEqual([]);
   });
 });
 

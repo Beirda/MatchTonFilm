@@ -34,8 +34,10 @@ jest.mock('@/lib/tmdb', () => ({
 }));
 
 const mockSaveVote = jest.fn();
+const mockGetUserVotedMovieIds = jest.fn();
 jest.mock('@/lib/votes', () => ({
   saveVote: (groupId: string, movieId: number, vote: string) => mockSaveVote(groupId, movieId, vote),
+  getUserVotedMovieIds: (groupId: string) => mockGetUserVotedMovieIds(groupId),
 }));
 
 import SwipeScreen from '@/app/groups/[id]/swipe';
@@ -75,6 +77,7 @@ function buildMovie(id: number, title: string): Movie {
 describe('SwipeScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetUserVotedMovieIds.mockResolvedValue([]);
   });
 
   it("récupère les films recommandés pour le groupe", async () => {
@@ -87,8 +90,25 @@ describe('SwipeScreen', () => {
     const { getByText } = render(<SwipeScreen />);
 
     await waitFor(() => expect(getByText('Dune')).toBeTruthy());
-    expect(mockGetGroupRecommendations).toHaveBeenCalledWith('g1', 10);
+    expect(mockGetGroupRecommendations).toHaveBeenCalledWith('g1', 30);
     expect(getByText('🎬 Ciné Club')).toBeTruthy();
+  });
+
+  it('exclut les films déjà votés pour reprendre la session en cours', async () => {
+    mockSingle.mockResolvedValue({
+      data: { name: 'Ciné Club', emoji: '🎬' },
+    });
+    mockGetGroupRecommendations.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    mockGetUserVotedMovieIds.mockResolvedValue([1]);
+    mockGetMovieDetails.mockImplementation((id: number) =>
+      Promise.resolve(buildMovie(id, id === 1 ? 'Dune' : 'Oppenheimer')),
+    );
+
+    const { getByText, queryByText } = render(<SwipeScreen />);
+
+    await waitFor(() => expect(getByText('Oppenheimer')).toBeTruthy());
+    expect(queryByText('Dune')).toBeNull();
+    expect(mockGetMovieDetails).toHaveBeenCalledTimes(1);
   });
 
   it("affiche un message quand il n'y a plus de film à proposer", async () => {
