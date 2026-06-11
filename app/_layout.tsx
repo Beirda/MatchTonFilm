@@ -53,6 +53,7 @@ function RootNavigator() {
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="groups/[id]" options={{ title: 'Groupe', headerBackTitle: 'Retour' }} />
       <Stack.Screen name="groups/[id]/swipe" options={{ headerShown: false }} />
+      <Stack.Screen name="groups/[id]/matches" options={{ headerShown: false }} />
       <Stack.Screen
         name="groups/create"
         options={{
