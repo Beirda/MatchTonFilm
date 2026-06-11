@@ -89,12 +89,15 @@ export default function FilmStep({ genres, selected, onToggle }: Props) {
   /**
    * Sélectionne ou désélectionne un film.
    *
-   * À la sélection, récupère `SIMILAR_COUNT` films similaires via TMDB et les
-   * insère juste après le film cliqué dans `displayList`. Ce comportement est
-   * récursif : chaque film similaire peut à son tour déclencher une nouvelle
+   * À la sélection, récupère `SIMILAR_COUNT` films proches via les
+   * recommandations TMDB (basées sur le comportement des utilisateurs, bien
+   * plus pertinentes que `/similar` qui ne compare que genres et mots-clés)
+   * et les insère juste après le film cliqué dans `displayList`. `/similar`
+   * reste un repli si le film n'a aucune recommandation. Ce comportement est
+   * récursif : chaque film injecté peut à son tour déclencher une nouvelle
    * injection lorsqu'il est sélectionné.
    *
-   * À la déselection, les films similaires déjà injectés restent visibles.
+   * À la déselection, les films déjà injectés restent visibles.
    */
   async function handleToggle(movie: Movie) {
     onToggle(toPreference(movie));
@@ -102,10 +105,13 @@ export default function FilmStep({ genres, selected, onToggle }: Props) {
     // Déselection : on garde les similaires déjà injectés, on ne fait rien de plus
     if (isSelected(movie.id)) return;
 
-    // Sélection : injecter SIMILAR_COUNT similaires juste après ce film dans displayList
+    // Sélection : injecter SIMILAR_COUNT films proches juste après ce film dans displayList
     setLoadingId(movie.id);
     try {
-      const res = await tmdb.getSimilar(movie.id);
+      let res = await tmdb.getRecommendations(movie.id);
+      if (res.results.length === 0) {
+        res = await tmdb.getSimilar(movie.id);
+      }
       setDisplayList(prev => {
         const toInject = res.results
           .filter(m => !prev.some(d => d.id === m.id))
