@@ -7,9 +7,10 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 
 type Props = Readonly<{
   onCreatePress: () => void;
+  onJoinPress: () => void;
 }>;
 
-function GroupEmpty({ onCreatePress }: Props) {
+function GroupEmpty({ onCreatePress, onJoinPress }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const styles = makeStyles(colors, colorScheme);
@@ -29,6 +30,13 @@ function GroupEmpty({ onCreatePress }: Props) {
       >
         <FontAwesome name="plus" size={18} color="#fff" />
         <Text style={styles.btnText}>Créer un groupe</Text>
+      </Pressable>
+      <Pressable
+        style={({ pressed }) => [styles.joinBtn, pressed && styles.joinBtnPressed]}
+        onPress={onJoinPress}
+      >
+        <FontAwesome name="link" size={16} color={colors.text} />
+        <Text style={styles.joinBtnText}>J&apos;ai un code d&apos;invitation</Text>
       </Pressable>
     </View>
   );
@@ -88,6 +96,26 @@ function makeStyles(
       color: '#fff',
       fontSize: 16,
       fontWeight: '700',
+    },
+    joinBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder2,
+      borderRadius: 999,
+      paddingVertical: 14,
+      paddingHorizontal: 28,
+      marginTop: 12,
+    },
+    joinBtnPressed: {
+      opacity: 0.7,
+    },
+    joinBtnText: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '600',
     },
   });
 }

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Colors } from '@/constants/theme';
@@ -38,12 +38,17 @@ export default function GroupsList({ onCreatePress, onJoinPress }: Props) {
     setInitialised(true);
   }
 
-  useEffect(() => {
-    loadGroups();
-  }, []);
+  // Recharge à chaque retour sur l'écran : un groupe créé ou rejoint
+  // apparaît immédiatement, sans avoir à changer d'onglet.
+  useFocusEffect(
+    useCallback(() => {
+      loadGroups();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   if (initialised && !refreshing && groups.length === 0) {
-    return <GroupEmpty onCreatePress={onCreatePress} />;
+    return <GroupEmpty onCreatePress={onCreatePress} onJoinPress={onJoinPress} />;
   }
 
   return (
