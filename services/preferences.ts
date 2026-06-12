@@ -1,4 +1,4 @@
-import type { UserPreferences } from '@/types/preferences';
+import type { GenrePreference, UserPreferences } from '@/types/preferences';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -27,6 +27,36 @@ export async function saveUserPreferences(prefs: UserPreferences): Promise<void>
         tmdb_id: f.tmdbId,
         title: f.title,
         poster_path: f.posterPath,
+      }))
+    );
+    if (error) throw error;
+  }
+}
+
+/** Genres préférés actuels de l'utilisateur. */
+export async function getUserGenres(userId: string): Promise<GenrePreference[]> {
+  const { data, error } = await supabase
+    .from('user_genres')
+    .select('tmdb_genre_id, genre_name')
+    .eq('user_id', userId);
+  if (error || !data) return [];
+
+  return (data as { tmdb_genre_id: number; genre_name: string }[]).map(g => ({
+    id: g.tmdb_genre_id,
+    name: g.genre_name,
+  }));
+}
+
+/** Remplace les genres préférés de l'utilisateur (édition depuis le profil). */
+export async function saveUserGenres(userId: string, genres: GenrePreference[]): Promise<void> {
+  await supabase.from('user_genres').delete().eq('user_id', userId);
+
+  if (genres.length > 0) {
+    const { error } = await supabase.from('user_genres').insert(
+      genres.map(g => ({
+        user_id: userId,
+        tmdb_genre_id: g.id,
+        genre_name: g.name,
       }))
     );
     if (error) throw error;

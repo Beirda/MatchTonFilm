@@ -7,7 +7,7 @@ import { ThemedView } from '@/components/themed-view';
 import type { GenrePreference } from '@/types/preferences';
 
 // TODO GH-2 : remplacer par un appel à TMDBClient.getGenres({ language: 'fr-FR' })
-const TMDB_GENRES: GenrePreference[] = [
+export const TMDB_GENRES: GenrePreference[] = [
   { id: 28, name: 'Action' },
   { id: 12, name: 'Aventure' },
   { id: 16, name: 'Animation' },

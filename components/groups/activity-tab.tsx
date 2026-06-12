@@ -1,33 +1,63 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-type ActivityItem = {
-  text: string;
-  sub: string;
-  icon: 'favorite' | 'group' | 'star' | 'flash-on';
-};
-
-const ITEMS: ActivityItem[] = [
-  { text: 'Drive a matché dans Ciné Couple', sub: 'Il y a 1 h', icon: 'favorite' },
-  { text: 'Tom a rejoint Soirée Coloc', sub: 'Il y a 2 h', icon: 'group' },
-  { text: 'Nouvelle session lancée', sub: 'Hier', icon: 'flash-on' },
-  { text: 'Parasite élu film gagnant', sub: 'Il y a 2 j', icon: 'star' },
-];
+import { fetchUserActivity, type ActivityEvent } from '@/lib/activity';
 
 export default function ActivityTab() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const styles = makeStyles(colors, colorScheme);
 
+  const [events, setEvents] = useState<ActivityEvent[]>([]);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [initialised, setInitialised] = useState<boolean>(false);
+
+  async function loadActivity() {
+    setRefreshing(true);
+    const data = await fetchUserActivity();
+    setEvents(data);
+    setRefreshing(false);
+    setInitialised(true);
+  }
+
+  useEffect(() => {
+    loadActivity();
+  }, []);
+
+  if (!initialised) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.red} />
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Activité</Text>
-      {ITEMS.map((item) => (
-        <View key={item.text} style={styles.row}>
+    <FlatList
+      data={events}
+      keyExtractor={(item) => item.id}
+      onRefresh={loadActivity}
+      refreshing={refreshing}
+      style={styles.root}
+      contentContainerStyle={styles.content}
+      ListHeaderComponent={<Text style={styles.title}>Activité</Text>}
+      ListEmptyComponent={
+        <View style={styles.empty}>
+          <View style={styles.emptyIconWrap}>
+            <MaterialIcons name="flash-on" size={28} color={colors.red} />
+          </View>
+          <Text style={styles.emptyTitle}>Rien à signaler</Text>
+          <Text style={styles.emptyBody}>
+            Les votes et arrivées dans tes groupes apparaîtront ici.
+          </Text>
+        </View>
+      }
+      renderItem={({ item }) => (
+        <View style={styles.row}>
           <View style={styles.iconWrap}>
             <MaterialIcons name={item.icon} size={18} color={colors.red} />
           </View>
@@ -36,8 +66,8 @@ export default function ActivityTab() {
             <Text style={styles.sub}>{item.sub}</Text>
           </View>
         </View>
-      ))}
-    </ScrollView>
+      )}
+    />
   );
 }
 
@@ -48,6 +78,7 @@ function makeStyles(
   return StyleSheet.create({
     root: { flex: 1 },
     content: { padding: 22, gap: 10 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     title: { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 6 },
     row: {
       flexDirection: 'row',
@@ -72,5 +103,29 @@ function makeStyles(
     textCol: { flex: 1 },
     label: { fontSize: 14, fontWeight: '700', color: colors.text },
     sub: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+    empty: {
+      alignItems: 'center',
+      paddingVertical: 48,
+      gap: 8,
+    },
+    emptyIconWrap: {
+      width: 72,
+      height: 72,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.redSoft,
+      borderWidth: 1,
+      borderColor: colors.redLine,
+      marginBottom: 6,
+    },
+    emptyTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
+    emptyBody: {
+      fontSize: 14,
+      color: colors.textMuted,
+      textAlign: 'center',
+      maxWidth: 260,
+      lineHeight: 20,
+    },
   });
 }

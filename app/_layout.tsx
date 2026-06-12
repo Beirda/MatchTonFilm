@@ -65,6 +65,10 @@ function RootNavigator() {
         name="groups/join"
         options={{ title: 'Rejoindre un groupe', headerBackTitle: 'Retour' }}
       />
+      <Stack.Screen
+        name="profile/genres"
+        options={{ title: 'Genres préférés', headerBackTitle: 'Retour' }}
+      />
       <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
     </Stack>
   );
