@@ -15,4 +15,6 @@ export type Group = {
   status: string;
   accent: string;
   people: GroupPerson[];
+  /** URLs des affiches des films en tête des matchs du groupe. */
+  posters: string[];
 };

@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Image } from 'expo-image';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -9,14 +10,25 @@ import type { Group } from '@/types/group';
 
 const POSTER_COLORS = ['#b5651d', '#3a4a3f', '#c2541c'];
 
-function PosterThumb({ index, stacked }: Readonly<{ index: number; stacked: boolean }>) {
+function PosterThumb({ uri, index, stacked }: Readonly<{ uri?: string; index: number; stacked: boolean }>) {
+  const layout = [
+    posterStyles.thumb,
+    stacked && { marginLeft: -18 },
+    { zIndex: 3 - index },
+  ];
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        style={layout}
+        contentFit="cover"
+        accessibilityLabel="Affiche d'un film en tête des matchs"
+      />
+    );
+  }
   return (
     <View
-      style={[
-        posterStyles.thumb,
-        stacked && { marginLeft: -18 },
-        { backgroundColor: POSTER_COLORS[index % POSTER_COLORS.length], zIndex: 3 - index },
-      ]}
+      style={[...layout, { backgroundColor: POSTER_COLORS[index % POSTER_COLORS.length] }]}
     />
   );
 }
@@ -31,7 +43,7 @@ function GroupCard({ group }: Readonly<{ group: Group }>) {
     <View style={styles.card}>
       <View style={styles.posters}>
         {[0, 1, 2].map((i) => (
-          <PosterThumb key={i} index={i} stacked={i > 0} />
+          <PosterThumb key={i} uri={group.posters[i]} index={i} stacked={i > 0} />
         ))}
       </View>
 
