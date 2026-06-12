@@ -32,4 +32,11 @@ describe('GroupEmpty', () => {
     fireEvent.press(getByText("J'ai un code d'invitation"));
     expect(onJoinPress).toHaveBeenCalledTimes(1);
   });
+
+  it('présente les trois étapes de prise en main', () => {
+    const { getByText } = render(<GroupEmpty onCreatePress={jest.fn()} onJoinPress={jest.fn()} />);
+    expect(getByText('Crée ton groupe')).toBeTruthy();
+    expect(getByText('Invite tes amis')).toBeTruthy();
+    expect(getByText('Swipez, matchez')).toBeTruthy();
+  });
 });
