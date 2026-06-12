@@ -26,6 +26,7 @@ const MOCK_GROUPS: Group[] = [
     status: 'En cours',
     accent: '#ff3b47',
     people: [{ n: 'L', c: '#ff3b47' }],
+    posters: [],
   },
   {
     id: 'couple',
@@ -37,6 +38,7 @@ const MOCK_GROUPS: Group[] = [
     status: 'À lancer',
     accent: '#d11e63',
     people: [{ n: 'A', c: '#d11e63' }],
+    posters: [],
   },
 ];
 

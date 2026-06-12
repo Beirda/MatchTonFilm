@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as Clipboard from 'expo-clipboard';
+import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Colors } from '@/constants/theme';
@@ -30,6 +34,7 @@ export default function GroupDetailScreen() {
 
   const [group, setGroup] = useState<GroupDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
     let active = true;
@@ -48,6 +53,19 @@ export default function GroupDetailScreen() {
       active = false;
     };
   }, [id]);
+
+  async function handleCopyCode() {
+    if (!group) return;
+    await Clipboard.setStringAsync(group.invitation_code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleShare() {
+    if (!group) return;
+    const link = Linking.createURL('groups/join', { queryParams: { code: group.invitation_code } });
+    await Share.share({ message: `Rejoins mon groupe sur MatchTonFilm !\n${link}`, url: link });
+  }
 
   if (loading) {
     return (
@@ -69,49 +87,91 @@ export default function GroupDetailScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <ThemedText type="title">
-        {group.emoji} {group.name}
-      </ThemedText>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.hero}>
+          <View style={styles.emojiBadge}>
+            <Text style={styles.emoji}>{group.emoji}</Text>
+          </View>
+          <ThemedText type="title" style={styles.title}>
+            {group.name}
+          </ThemedText>
+          <View style={styles.chipRow}>
+            <View style={styles.chip}>
+              <ThemedText style={styles.chipText}>{group.age_rating}</ThemedText>
+            </View>
+            <View style={styles.chip}>
+              <ThemedText style={styles.chipText}>{group.language}</ThemedText>
+            </View>
+            {group.genres.map((genre) => (
+              <View key={genre} style={styles.chip}>
+                <ThemedText style={styles.chipText}>{genre}</ThemedText>
+              </View>
+            ))}
+          </View>
+        </View>
 
-      <View style={styles.codeBlock}>
-        <ThemedText style={styles.label}>Code d&apos;invitation</ThemedText>
-        <ThemedText style={styles.code}>{group.invitation_code}</ThemedText>
+        <View style={styles.codeBlock}>
+          <View style={styles.codeInfo}>
+            <ThemedText style={styles.label}>Code d&apos;invitation</ThemedText>
+            <ThemedText style={styles.code}>{group.invitation_code}</ThemedText>
+          </View>
+          <View style={styles.codeActions}>
+            <Pressable
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
+              onPress={handleCopyCode}
+              accessibilityRole="button"
+              accessibilityLabel="Copier le code d'invitation"
+            >
+              <MaterialIcons name={copied ? 'check' : 'content-copy'} size={19} color={copied ? colors.green : colors.text} />
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
+              onPress={handleShare}
+              accessibilityRole="button"
+              accessibilityLabel="Partager le lien d'invitation"
+            >
+              <MaterialIcons name="share" size={19} color={colors.text} />
+            </Pressable>
+          </View>
+        </View>
+
+        <ThemedText style={styles.sectionLabel}>
+          {members.length} membre{members.length > 1 ? 's' : ''}
+        </ThemedText>
+        <View style={styles.memberList}>
+          {members.slice(0, 12).map((m, i) => (
+            <View key={i} style={styles.memberRow}>
+              <Avatar
+                initial={(m.profiles?.display_name ?? '?').charAt(0).toUpperCase()}
+                color={m.profiles?.avatar_color ?? colors.red}
+                size={36}
+                borderColor={colors.background}
+              />
+              <ThemedText style={styles.memberName} numberOfLines={1}>
+                {m.profiles?.display_name ?? 'Membre'}
+              </ThemedText>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <Pressable
+          style={({ pressed }) => [styles.swipeBtn, pressed && styles.swipeBtnPressed]}
+          onPress={() => router.push(`/groups/${id}/swipe`)}
+        >
+          <FontAwesome name="play" size={15} color="#fff" />
+          <Text style={styles.swipeBtnText}>Lancer une session</Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [styles.resultsBtn, pressed && styles.resultsBtnPressed]}
+          onPress={() => router.push(`/groups/${id}/matches`)}
+        >
+          <FontAwesome name="trophy" size={15} color={colors.text} />
+          <Text style={styles.resultsBtnText}>Voir les résultats</Text>
+        </Pressable>
       </View>
-
-      <ThemedText style={styles.label}>
-        {members.length} membre{members.length > 1 ? 's' : ''}
-      </ThemedText>
-      <View style={styles.avatarRow}>
-        {members.slice(0, 8).map((m, i) => (
-          <Avatar
-            key={i}
-            initial={(m.profiles?.display_name ?? '?').charAt(0).toUpperCase()}
-            color={m.profiles?.avatar_color ?? colors.red}
-            size={36}
-            borderColor={colors.background}
-          />
-        ))}
-      </View>
-
-      <ThemedText style={styles.label}>Filtres</ThemedText>
-      <ThemedText style={styles.filters}>
-        {group.age_rating} · {group.language}
-        {group.genres.length > 0 ? ` · ${group.genres.join(', ')}` : ''}
-      </ThemedText>
-
-      <Pressable
-        style={({ pressed }) => [styles.swipeBtn, pressed && styles.swipeBtnPressed]}
-        onPress={() => router.push(`/groups/${id}/swipe`)}
-      >
-        <Text style={styles.swipeBtnText}>Lancer une session</Text>
-      </Pressable>
-
-      <Pressable
-        style={({ pressed }) => [styles.resultsBtn, pressed && styles.resultsBtnPressed]}
-        onPress={() => router.push(`/groups/${id}/matches`)}
-      >
-        <Text style={styles.resultsBtnText}>Voir les résultats</Text>
-      </Pressable>
     </ThemedView>
   );
 }
@@ -124,22 +184,70 @@ function makeStyles(
     root: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    scroll: {
       padding: 22,
-      paddingTop: 32,
-      gap: 16,
+      paddingBottom: 24,
+      gap: 18,
     },
     center: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    codeBlock: {
+    hero: {
+      alignItems: 'center',
+      gap: 12,
+      marginTop: 6,
+    },
+    emojiBadge: {
+      width: 76,
+      height: 76,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.redSoft,
+      borderWidth: 1,
+      borderColor: colors.redLine,
+    },
+    emoji: {
+      fontSize: 36,
+    },
+    title: {
+      textAlign: 'center',
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: 6,
+    },
+    chip: {
+      borderRadius: 999,
+      paddingHorizontal: 11,
+      paddingVertical: 5,
       backgroundColor: colors.surface,
-      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+    },
+    chipText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textMuted,
+    },
+    codeBlock: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.surfaceBorder,
       padding: 16,
-      gap: 6,
+      gap: 12,
+    },
+    codeInfo: {
+      flex: 1,
+      gap: 4,
     },
     label: {
       fontSize: 12,
@@ -154,22 +262,64 @@ function makeStyles(
       color: colors.text,
       letterSpacing: 4,
     },
-    avatarRow: {
+    codeActions: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
       gap: 8,
     },
-    filters: {
+    iconBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surfaceBorder,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder2,
+    },
+    iconBtnPressed: {
+      opacity: 0.7,
+    },
+    sectionLabel: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textMuted,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    },
+    memberList: {
+      gap: 10,
+    },
+    memberRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.surfaceBorder,
+      borderRadius: 14,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+    },
+    memberName: {
+      flex: 1,
       fontSize: 15,
-      color: colors.text,
-      lineHeight: 22,
+      fontWeight: '600',
+    },
+    footer: {
+      padding: 22,
+      paddingTop: 12,
+      gap: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.surfaceBorder,
     },
     swipeBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
       backgroundColor: colors.red,
       borderRadius: 999,
       paddingVertical: 16,
-      alignItems: 'center',
-      marginTop: 8,
     },
     swipeBtnPressed: {
       opacity: 0.85,
@@ -180,12 +330,15 @@ function makeStyles(
       fontWeight: '700',
     },
     resultsBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.surfaceBorder,
       borderRadius: 999,
       paddingVertical: 16,
-      alignItems: 'center',
     },
     resultsBtnPressed: {
       opacity: 0.85,

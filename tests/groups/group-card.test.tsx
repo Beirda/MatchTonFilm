@@ -17,9 +17,19 @@ const BASE_GROUP: Group = {
     { n: 'A', c: '#ff3b47' },
     { n: 'B', c: '#2a3a8c' },
   ],
+  posters: [],
 };
 
 describe('GroupCard', () => {
+  it('affiche les affiches des films en tête des matchs', () => {
+    const group = {
+      ...BASE_GROUP,
+      posters: ['https://image.tmdb.org/t/p/w185/a.jpg', 'https://image.tmdb.org/t/p/w185/b.jpg'],
+    };
+    const { getAllByLabelText } = render(<GroupCard group={group} />);
+    expect(getAllByLabelText("Affiche d'un film en tête des matchs")).toHaveLength(2);
+  });
+
   it('affiche le nom et l\'emoji du groupe', () => {
     const { getByText } = render(<GroupCard group={BASE_GROUP} />);
     expect(getByText('🎬 Test Group')).toBeTruthy();
