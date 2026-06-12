@@ -21,6 +21,7 @@
     },
     "testPathIgnorePatterns": [
       "/node_modules/",
+      "/.test-dist/",
       "TMDBWrappers"
     ],
     "transformIgnorePatterns": [
