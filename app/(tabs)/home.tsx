@@ -60,12 +60,6 @@ export default function HomeScreen() {
             <Text style={styles.greetingName}>{displayName}</Text>
           </View>
         </View>
-        <Pressable
-          style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
-          onPress={() => setTab('profile')}
-        >
-          <MaterialIcons name="person-outline" size={20} color={colors.text} />
-        </Pressable>
       </View>
 
       {tab === 'home' && (
@@ -151,19 +145,6 @@ function makeStyles(
       fontWeight: '800',
       color: colors.text,
       letterSpacing: -0.2,
-    },
-    iconBtn: {
-      width: 44,
-      height: 44,
-      borderRadius: 999,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.surfaceBorder,
-      borderWidth: 1,
-      borderColor: colors.surfaceBorder2,
-    },
-    iconBtnPressed: {
-      opacity: 0.7,
     },
     bottomNav: {
       flexDirection: 'row',
