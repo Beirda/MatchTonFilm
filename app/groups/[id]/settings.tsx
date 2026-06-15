@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { GENRES } from '@/constants/genres';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { deleteGroup } from '@/lib/groups';
 import { supabase } from '@/lib/supabase';
 import { isGroupAdmin } from '@/lib/votes';
 import { ThemedText } from '@/components/themed-text';
@@ -64,6 +65,7 @@ export default function GroupSettingsScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [regenerating, setRegenerating] = useState<boolean>(false);
+  const [deleting, setDeleting] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [nameFocused, setNameFocused] = useState<boolean>(false);
@@ -148,6 +150,32 @@ export default function GroupSettingsScreen() {
               return;
             }
             setInviteCode(code);
+          },
+        },
+      ],
+    );
+  }
+
+  function handleDelete() {
+    Alert.alert(
+      'Supprimer le groupe',
+      'Cette action est définitive : le groupe, ses membres et tous les votes seront supprimés. Continuer ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            setError('');
+            try {
+              await deleteGroup(id);
+            } catch {
+              setDeleting(false);
+              setError('Impossible de supprimer le groupe. Réessaie.');
+              return;
+            }
+            router.dismissAll();
           },
         },
       ],
@@ -305,6 +333,33 @@ export default function GroupSettingsScreen() {
           <ThemedText style={styles.hint}>
             Régénérer invalide l&apos;ancien code : les liens déjà partagés ne permettront plus de
             rejoindre le groupe.
+          </ThemedText>
+        </View>
+
+        <View style={styles.section}>
+          <ThemedText style={[styles.label, styles.dangerLabel]}>Zone de danger</ThemedText>
+          <Pressable
+            style={({ pressed }) => [
+              styles.deleteBtn,
+              (pressed || deleting) && styles.deleteBtnPressed,
+            ]}
+            onPress={handleDelete}
+            disabled={deleting}
+            accessibilityRole="button"
+            accessibilityLabel="Supprimer le groupe"
+            accessibilityHint="Supprime définitivement le groupe, ses membres et ses votes"
+          >
+            {deleting ? (
+              <ActivityIndicator size="small" color={colors.red} />
+            ) : (
+              <>
+                <MaterialIcons name="delete-outline" size={18} color={colors.red} />
+                <Text style={styles.deleteText}>Supprimer le groupe</Text>
+              </>
+            )}
+          </Pressable>
+          <ThemedText style={styles.hint}>
+            Le groupe sera supprimé pour tous les membres. Cette action est irréversible.
           </ThemedText>
         </View>
       </ScrollView>
@@ -506,6 +561,28 @@ function makeStyles(
       fontSize: 12,
       lineHeight: 17,
       color: colors.textFaint,
+    },
+    dangerLabel: {
+      color: colors.red,
+    },
+    deleteBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: colors.red,
+      backgroundColor: colors.redSoft,
+      paddingVertical: 13,
+    },
+    deleteBtnPressed: {
+      opacity: 0.7,
+    },
+    deleteText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.red,
     },
     footer: {
       paddingHorizontal: 22,
