@@ -161,8 +161,9 @@ export async function fetchUserGroups(): Promise<Group[]> {
  * disparaissent en cascade (ON DELETE CASCADE sur group_id).
  */
 export async function deleteGroup(groupId: string): Promise<void> {
-  const { error } = await supabase.from('groups').delete().eq('id', groupId);
+  const { data, error } = await supabase.from('groups').delete().eq('id', groupId).select('id');
   if (error) throw error;
+  if (!data?.length) throw new Error('Suppression refusée : tu n’es peut-être plus admin du groupe.');
 }
 
 /**

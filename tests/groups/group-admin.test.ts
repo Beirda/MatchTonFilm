@@ -4,7 +4,7 @@ const mockRpc = jest.fn();
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     from: () => ({
-      delete: () => ({ eq: () => mockDelete() }),
+      delete: () => ({ eq: () => ({ select: () => mockDelete() }) }),
     }),
     rpc: (...args: unknown[]) => mockRpc(...args),
   },
@@ -22,7 +22,7 @@ describe('deleteGroup', () => {
   });
 
   it('supprime le groupe par son id', async () => {
-    mockDelete.mockResolvedValue({ error: null });
+    mockDelete.mockResolvedValue({ data: [{ id: 'g1' }], error: null });
 
     await deleteGroup('g1');
 
@@ -30,9 +30,15 @@ describe('deleteGroup', () => {
   });
 
   it("propage l'erreur renvoyée par Supabase", async () => {
-    mockDelete.mockResolvedValue({ error: new Error('not authorized') });
+    mockDelete.mockResolvedValue({ data: null, error: new Error('not authorized') });
 
     await expect(deleteGroup('g1')).rejects.toThrow('not authorized');
+  });
+
+  it('échoue si aucune ligne n\'a été supprimée (RLS refusée)', async () => {
+    mockDelete.mockResolvedValue({ data: [], error: null });
+
+    await expect(deleteGroup('g1')).rejects.toThrow(/Suppression refusée/);
   });
 });
 
