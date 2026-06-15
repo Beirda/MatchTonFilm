@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
-  router: { back: jest.fn(), push: jest.fn() },
+  router: { back: jest.fn(), push: jest.fn(), dismissAll: jest.fn() },
   useLocalSearchParams: () => ({ id: 'g1' }),
 }));
 jest.mock('react-native-safe-area-context', () => ({
@@ -30,6 +30,11 @@ jest.mock('@/lib/votes', () => ({
   isGroupAdmin: (groupId: string) => mockIsGroupAdmin(groupId),
 }));
 
+const mockDeleteGroup = jest.fn();
+jest.mock('@/lib/groups', () => ({
+  deleteGroup: (groupId: string) => mockDeleteGroup(groupId),
+}));
+
 import GroupSettingsScreen from '@/app/groups/[id]/settings';
 
 const GROUP = {
@@ -46,6 +51,7 @@ describe('GroupSettingsScreen', () => {
     mockSingle.mockResolvedValue({ data: GROUP, error: null });
     mockIsGroupAdmin.mockResolvedValue(true);
     mockUpdate.mockResolvedValue({ error: null });
+    mockDeleteGroup.mockResolvedValue(undefined);
   });
 
   it('préremplit le formulaire avec les paramètres du groupe', async () => {
@@ -97,6 +103,24 @@ describe('GroupSettingsScreen', () => {
       expect(mockUpdate).toHaveBeenCalledWith({ invitation_code: expect.stringMatching(/^[A-Z2-9]{6}$/) }),
     );
     await waitFor(() => expect(queryByText('ABC234')).toBeNull());
+
+    alertSpy.mockRestore();
+  });
+
+  it('supprime le groupe après confirmation puis revient à la liste', async () => {
+    const { router } = require('expo-router');
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+      const confirm = buttons?.find(b => b.style === 'destructive');
+      confirm?.onPress?.();
+    });
+
+    const { getByText } = render(<GroupSettingsScreen />);
+    await waitFor(() => expect(getByText('ABC234')).toBeTruthy());
+
+    fireEvent.press(getByText('Supprimer le groupe'));
+
+    await waitFor(() => expect(mockDeleteGroup).toHaveBeenCalledWith('g1'));
+    expect(router.dismissAll).toHaveBeenCalled();
 
     alertSpy.mockRestore();
   });
