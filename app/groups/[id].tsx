@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/lib/supabase';
+import { isGroupAdmin } from '@/lib/votes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import Avatar from '@/components/ui/avatar';
@@ -35,24 +36,33 @@ export default function GroupDetailScreen() {
   const [group, setGroup] = useState<GroupDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [copied, setCopied] = useState<boolean>(false);
+  const [admin, setAdmin] = useState<boolean>(false);
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const { data } = await supabase
-        .from('groups')
-        .select('name, emoji, invitation_code, genres, age_rating, language, group_members(profiles(display_name, avatar_color))')
-        .eq('id', id)
-        .single();
-      if (active) {
-        setGroup((data as unknown as GroupDetail | null) ?? null);
-        setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [id]);
+  // Rechargé à chaque focus : les modifications faites dans les paramètres
+  // (nom, filtres, code) apparaissent immédiatement au retour.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        const [{ data }, isAdmin] = await Promise.all([
+          supabase
+            .from('groups')
+            .select('name, emoji, invitation_code, genres, age_rating, language, group_members(profiles(display_name, avatar_color))')
+            .eq('id', id)
+            .single(),
+          isGroupAdmin(id),
+        ]);
+        if (active) {
+          setGroup((data as unknown as GroupDetail | null) ?? null);
+          setAdmin(isAdmin);
+          setLoading(false);
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [id]),
+  );
 
   async function handleCopyCode() {
     if (!group) return;
@@ -87,6 +97,22 @@ export default function GroupDetailScreen() {
 
   return (
     <ThemedView style={styles.root}>
+      <Stack.Screen
+        options={{
+          headerRight: admin
+            ? () => (
+                <Pressable
+                  onPress={() => router.push(`/groups/${id}/settings`)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Paramètres du groupe"
+                >
+                  <MaterialIcons name="settings" size={22} color={colors.text} />
+                </Pressable>
+              )
+            : undefined,
+        }}
+      />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <View style={styles.emojiBadge}>
