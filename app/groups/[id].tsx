@@ -6,6 +6,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
 import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -202,7 +203,12 @@ export default function GroupDetailScreen() {
         </ThemedText>
         <View style={styles.memberList}>
           {members.slice(0, 12).map((m) => (
-            <View key={m.user_id} style={styles.memberRow}>
+            <Animated.View
+              key={m.user_id}
+              layout={LinearTransition}
+              entering={FadeIn.duration(220)}
+              style={styles.memberRow}
+            >
               <Avatar
                 initial={(m.profiles?.display_name ?? '?').charAt(0).toUpperCase()}
                 color={m.profiles?.avatar_color ?? colors.red}
@@ -227,7 +233,7 @@ export default function GroupDetailScreen() {
                   <MaterialIcons name="person-remove" size={18} color={colors.red} />
                 </Pressable>
               ) : null}
-            </View>
+            </Animated.View>
           ))}
         </View>
       </ScrollView>

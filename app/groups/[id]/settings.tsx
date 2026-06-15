@@ -336,7 +336,7 @@ export default function GroupSettingsScreen() {
           </ThemedText>
         </View>
 
-        <View style={styles.section}>
+        <View style={[styles.section, styles.dangerSection]}>
           <ThemedText style={[styles.label, styles.dangerLabel]}>Zone de danger</ThemedText>
           <Pressable
             style={({ pressed }) => [
@@ -561,6 +561,12 @@ function makeStyles(
       fontSize: 12,
       lineHeight: 17,
       color: colors.textFaint,
+    },
+    dangerSection: {
+      marginTop: 4,
+      paddingTop: 22,
+      borderTopWidth: 1,
+      borderTopColor: colors.surfaceBorder,
     },
     dangerLabel: {
       color: colors.red,
