@@ -13,10 +13,15 @@ import {
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { supabase } from '@/lib/supabase';
 import PosterMarquee from '@/components/auth/poster-marquee';
+
+// Ferme proprement la popup OAuth quand la session revient vers l'app (web).
+WebBrowser.maybeCompleteAuthSession();
 
 // Palette cinématographique de la maquette (auth = dark only).
 const C = {
@@ -43,7 +48,22 @@ function messageFor(raw: string): string {
   if (raw.includes('is invalid') || raw.includes('valid email')) return 'Adresse email invalide.';
   if (raw.includes('Email not confirmed')) return 'Confirme ton email avant de te connecter.';
   if (raw.includes('rate limit')) return 'Trop de tentatives. Réessaie dans quelques minutes.';
+  if (raw.includes('provider is not enabled') || raw.includes('Unsupported provider')) {
+    return "La connexion Google n'est pas encore activée sur le serveur.";
+  }
   return 'Une erreur est survenue. Réessaie.';
+}
+
+/** Extrait les tokens de session de l'URL de retour OAuth (fragment ou query). */
+function parseAuthTokens(url: string): { access_token: string; refresh_token: string } | null {
+  const sep = url.includes('#') ? '#' : '?';
+  const raw = url.slice(url.indexOf(sep) + 1);
+  if (!raw) return null;
+  const params = new URLSearchParams(raw);
+  const access_token = params.get('access_token');
+  const refresh_token = params.get('refresh_token');
+  if (!access_token || !refresh_token) return null;
+  return { access_token, refresh_token };
 }
 
 export default function SignInScreen() {
@@ -52,10 +72,11 @@ export default function SignInScreen() {
   const [password, setPassword] = useState<string>('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [googleLoading, setGoogleLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [notice, setNotice] = useState<string>('');
 
-  const canSubmit = email.trim().length > 0 && password.length > 0 && !loading;
+  const canSubmit = email.trim().length > 0 && password.length > 0 && !loading && !googleLoading;
 
   async function handleSubmit() {
     if (!canSubmit) return;
@@ -83,6 +104,36 @@ export default function SignInScreen() {
       setError(messageFor(e instanceof Error ? e.message : String(e)));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGoogle() {
+    if (loading || googleLoading) return;
+    setGoogleLoading(true);
+    setError('');
+    setNotice('');
+    try {
+      const redirectTo = Linking.createURL('/');
+      const { data, error: err } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo, skipBrowserRedirect: Platform.OS !== 'web' },
+      });
+      if (err) throw err;
+
+      // Sur web, Supabase redirige la page lui-même : rien d'autre à faire.
+      if (Platform.OS === 'web' || !data?.url) return;
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type !== 'success') return;
+
+      const tokens = parseAuthTokens(result.url);
+      if (!tokens) throw new Error('missing tokens');
+      const { error: sessionErr } = await supabase.auth.setSession(tokens);
+      if (sessionErr) throw sessionErr;
+    } catch (e) {
+      setError(messageFor(e instanceof Error ? e.message : String(e)));
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
@@ -215,6 +266,34 @@ export default function SignInScreen() {
               </Pressable>
             </View>
 
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>ou</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <Pressable
+              onPress={handleGoogle}
+              disabled={loading || googleLoading}
+              accessibilityRole="button"
+              accessibilityLabel="Continuer avec Google"
+              accessibilityState={{ disabled: loading || googleLoading, busy: googleLoading }}
+              style={({ pressed }) => [
+                styles.googleBtn,
+                (loading || googleLoading) && styles.googleDisabled,
+                pressed && !loading && !googleLoading && styles.googlePressed,
+              ]}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color="#1a1a22" />
+              ) : (
+                <>
+                  <FontAwesome name="google" size={18} color="#1a1a22" />
+                  <Text style={styles.googleText}>Continuer avec Google</Text>
+                </>
+              )}
+            </Pressable>
+
             <Pressable
               style={styles.switchBtn}
               onPress={switchMode}
@@ -308,6 +387,24 @@ const styles = StyleSheet.create({
   primaryPressed: { transform: [{ scale: 0.985 }] },
   primaryDisabled: { opacity: 0.4 },
   primaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: C.stroke },
+  dividerText: { color: C.textFaint, fontSize: 13, fontWeight: '600' },
+
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#fff',
+    borderRadius: 999,
+    paddingVertical: 15,
+    marginTop: 16,
+  },
+  googlePressed: { opacity: 0.85 },
+  googleDisabled: { opacity: 0.5 },
+  googleText: { color: '#1a1a22', fontSize: 15.5, fontWeight: '700' },
 
   switchBtn: { marginTop: 22, alignItems: 'center' },
   switchText: { color: C.textMuted, fontSize: 15 },
