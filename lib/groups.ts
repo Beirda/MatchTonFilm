@@ -154,3 +154,27 @@ export async function fetchUserGroups(): Promise<Group[]> {
     };
   });
 }
+
+/**
+ * Supprime définitivement un groupe (réservé à l'admin via la policy RLS
+ * « groups: suppression par l'admin »). Les membres, votes et préférences liés
+ * disparaissent en cascade (ON DELETE CASCADE sur group_id).
+ */
+export async function deleteGroup(groupId: string): Promise<void> {
+  const { data, error } = await supabase.from('groups').delete().eq('id', groupId).select('id');
+  if (error) throw error;
+  if (!data?.length) throw new Error('Suppression refusée : tu n’es peut-être plus admin du groupe.');
+}
+
+/**
+ * Retire un membre d'un groupe (réservé à l'admin) via la RPC SECURITY DEFINER
+ * `remove_group_member` : la policy RLS de group_members ne permet à chacun que
+ * de se retirer lui-même, d'où le passage par une fonction côté serveur.
+ */
+export async function removeGroupMember(groupId: string, userId: string): Promise<void> {
+  const { error } = await supabase.rpc('remove_group_member', {
+    p_group_id: groupId,
+    p_user_id: userId,
+  });
+  if (error) throw error;
+}

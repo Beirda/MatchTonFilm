@@ -1,21 +1,25 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
 import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { removeGroupMember } from '@/lib/groups';
 import { supabase } from '@/lib/supabase';
 import { isGroupAdmin } from '@/lib/votes';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import Avatar from '@/components/ui/avatar';
 
-type Member = { display_name: string | null; avatar_color: string } | null;
+type MemberProfile = { display_name: string | null; avatar_color: string } | null;
+
+type GroupMember = { user_id: string; role: string; profiles: MemberProfile };
 
 type GroupDetail = {
   name: string;
@@ -24,7 +28,7 @@ type GroupDetail = {
   genres: string[];
   age_rating: string;
   language: string;
-  group_members: { profiles: Member }[] | null;
+  group_members: GroupMember[] | null;
 };
 
 export default function GroupDetailScreen() {
@@ -47,7 +51,7 @@ export default function GroupDetailScreen() {
         const [{ data }, isAdmin] = await Promise.all([
           supabase
             .from('groups')
-            .select('name, emoji, invitation_code, genres, age_rating, language, group_members(profiles(display_name, avatar_color))')
+            .select('name, emoji, invitation_code, genres, age_rating, language, group_members(user_id, role, profiles(display_name, avatar_color))')
             .eq('id', id)
             .single(),
           isGroupAdmin(id),
@@ -75,6 +79,39 @@ export default function GroupDetailScreen() {
     if (!group) return;
     const link = Linking.createURL('groups/join', { queryParams: { code: group.invitation_code } });
     await Share.share({ message: `Rejoins mon groupe sur MatchTonFilm !\n${link}`, url: link });
+  }
+
+  function handleRemoveMember(member: GroupMember) {
+    const label = member.profiles?.display_name ?? 'ce membre';
+    Alert.alert(
+      'Retirer le membre',
+      `Retirer ${label} du groupe ? Cette personne pourra rejoindre à nouveau avec le code d'invitation.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Retirer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await removeGroupMember(id, member.user_id);
+            } catch {
+              Alert.alert('Erreur', 'Impossible de retirer ce membre. Réessaie.');
+              return;
+            }
+            setGroup(prev =>
+              prev
+                ? {
+                    ...prev,
+                    group_members: (prev.group_members ?? []).filter(
+                      m => m.user_id !== member.user_id,
+                    ),
+                  }
+                : prev,
+            );
+          },
+        },
+      ],
+    );
   }
 
   if (loading) {
@@ -165,8 +202,13 @@ export default function GroupDetailScreen() {
           {members.length} membre{members.length > 1 ? 's' : ''}
         </ThemedText>
         <View style={styles.memberList}>
-          {members.slice(0, 12).map((m, i) => (
-            <View key={i} style={styles.memberRow}>
+          {members.slice(0, 12).map((m) => (
+            <Animated.View
+              key={m.user_id}
+              layout={LinearTransition}
+              entering={FadeIn.duration(220)}
+              style={styles.memberRow}
+            >
               <Avatar
                 initial={(m.profiles?.display_name ?? '?').charAt(0).toUpperCase()}
                 color={m.profiles?.avatar_color ?? colors.red}
@@ -176,7 +218,22 @@ export default function GroupDetailScreen() {
               <ThemedText style={styles.memberName} numberOfLines={1}>
                 {m.profiles?.display_name ?? 'Membre'}
               </ThemedText>
-            </View>
+              {m.role === 'admin' ? (
+                <View style={styles.adminBadge}>
+                  <ThemedText style={styles.adminBadgeText}>Admin</ThemedText>
+                </View>
+              ) : admin ? (
+                <Pressable
+                  style={({ pressed }) => [styles.removeBtn, pressed && styles.removeBtnPressed]}
+                  onPress={() => handleRemoveMember(m)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Retirer ${m.profiles?.display_name ?? 'ce membre'} du groupe`}
+                >
+                  <MaterialIcons name="person-remove" size={18} color={colors.red} />
+                </Pressable>
+              ) : null}
+            </Animated.View>
           ))}
         </View>
       </ScrollView>
@@ -330,6 +387,33 @@ function makeStyles(
       flex: 1,
       fontSize: 15,
       fontWeight: '600',
+    },
+    adminBadge: {
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      backgroundColor: colors.redSoft,
+      borderWidth: 1,
+      borderColor: colors.redLine,
+    },
+    adminBadgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.red,
+      letterSpacing: 0.5,
+    },
+    removeBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.redSoft,
+      borderWidth: 1,
+      borderColor: colors.redLine,
+    },
+    removeBtnPressed: {
+      opacity: 0.7,
     },
     footer: {
       padding: 22,

@@ -13,6 +13,7 @@ l'interface.
 | P3 | Deux appareils | Appareil **A** (Alice, future admin) et appareil **B** (Bruno), sur le même réseau si Expo Go |
 | P4 | Comptes propres | Deux emails jamais utilisés (ou purger `auth.users` de test) |
 | P5 | (Optionnel) OAuth Google | Provider Google activé dans Supabase — cf. `docs/google-oauth.md` ; sinon l'étape 1-bis affichera le message d'erreur attendu |
+| P6 | Migration Supabase à jour | `supabase/migrations/20260615_007_remove_group_member.sql` appliquée (sinon le retrait d'un membre par l'admin — étape 7.5 — échoue) |
 
 ---
 
@@ -71,6 +72,8 @@ liste **2 membres avec leurs noms**. Contre-test : saisir un code bidon →
 **Appareils A et B en parallèle :** « Lancer une session ».
 1. ✅ **Vérif #29** : le bouton retour du haut n'est **pas** sous la barre de
    statut du téléphone.
+   - ✅ **Vérif header** : le titre du groupe est centré et **aucun cercle vide**
+     n'apparaît à droite du back (l'icône factice a été retirée).
 2. ✅ **Vérif #29** : noter les 3 premiers films sur A et sur B → **les mêmes
    films dans le même ordre** (pool commun, nécessite P1).
 3. Taper ⓘ en haut à droite d'une carte → fiche complète (synopsis entier,
@@ -114,7 +117,17 @@ réapparaît.
 3. **Appareil B (contre-test lien expiré, E2E-011)** : se déconnecter avec un
    3e compte, tenter de rejoindre avec l'**ancien** code → « Ce code
    d'invitation est invalide. » Le **nouveau** code fonctionne.
-4. **Appareil B (non-admin)** : la page du groupe n'affiche **pas** la roue ⚙️.
+4. **Appareil B (non-admin)** : la page du groupe n'affiche **pas** la roue ⚙️,
+   ni de bouton de retrait sur les membres.
+5. **Retrait d'un membre (E2E-013, admin)** : sur **A**, page du groupe → chaque
+   membre non-admin porte une icône de retrait ; l'admin porte le badge
+   « Admin » (pas de retrait possible). Retirer Bruno → confirmer → il disparaît
+   de la liste, et sur **B** le groupe disparaît de « Mes groupes ». Bruno peut
+   re-rejoindre avec le code (nécessite P6).
+6. **Suppression du groupe (E2E-014, admin)** : sur **A**, ⚙️ → bas de page,
+   « Zone de danger » → « Supprimer le groupe » → confirmer. Retour à la liste
+   des groupes, le groupe a disparu ; sur **B** il disparaît également (membres
+   et votes supprimés en cascade).
 
 ---
 
@@ -155,7 +168,8 @@ en haut à droite).
 - [ ] Classement et film gagnant identiques sur tous les appareils.
 - [ ] Les films votés ne réapparaissent jamais dans une session (hors reset).
 - [ ] Toutes les chaînes visibles sont en français.
-- [ ] Les actions admin (reset, ⚙️) sont invisibles pour les membres.
+- [ ] Les actions admin (reset, ⚙️, retrait de membre, suppression) sont
+      invisibles pour les membres.
 
 ## Limites connues
 - En Expo Go, le lien profond `exp://<IP>:8081/--/groups/join?code=…` ne

@@ -85,7 +85,7 @@ export default function SwipeScreen() {
         <ThemedText type="subtitle" numberOfLines={1} style={styles.headerTitle}>
           {group ? `${group.emoji} ${group.name}` : 'Swipe'}
         </ThemedText>
-        <View style={styles.iconBtn} />
+        <View style={styles.headerSpacer} />
       </View>
 
       {loading ? (
@@ -188,6 +188,9 @@ function makeStyles(
     },
     iconBtnPressed: {
       opacity: 0.7,
+    },
+    headerSpacer: {
+      width: 40,
     },
     center: {
       flex: 1,
