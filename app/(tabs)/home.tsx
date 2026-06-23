@@ -17,7 +17,7 @@ type Tab = 'home' | 'activity' | 'profile';
 
 const NAV_ITEMS: { key: Tab; label: string }[] = [
   { key: 'home', label: 'Groupes' },
-  { key: 'activity', label: 'Activité' },
+  { key: 'activity', label: 'Historique' },
   { key: 'profile', label: 'Profil' },
 ];
 

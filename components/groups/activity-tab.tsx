@@ -44,7 +44,7 @@ export default function ActivityTab() {
       refreshing={refreshing}
       style={styles.root}
       contentContainerStyle={styles.content}
-      ListHeaderComponent={<Text style={styles.title}>Activité</Text>}
+      ListHeaderComponent={<Text style={styles.title}>Historique</Text>}
       ListEmptyComponent={
         <View style={styles.empty}>
           <View style={styles.emptyIconWrap}>

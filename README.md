@@ -1,29 +1,99 @@
-# Welcome to your Expo app 👋
+# MatchTonFilm 🎬
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App mobile de **swipe de films en groupe**. Chaque membre swipe les films proposés
+(comme sur une app de rencontre) ; l'app croise les votes du groupe et fait remonter
+le film qui met tout le monde d'accord — « Arrête de débattre. Swipez. »
 
-## Get started
+Projet d'évaluation finale **M1 React Native — SUP de VINCI** (Sujet 1 : MatchTonFilm).
 
-1. Install dependencies
+## Fonctionnalités
 
-   ```bash
-   npm install
-   ```
+- **Authentification** Supabase (email + mot de passe, + « Continuer avec Google »).
+- **Onboarding** des goûts : genres préférés + films aimés (avec recherche TMDB et
+  suggestions de films similaires injectées à la volée).
+- **Groupes** : créer un groupe (genres, limite d'âge), le rejoindre par code à 6
+  caractères ou par lien d'invitation (`expo-linking` + presse-papier), gérer ses membres.
+- **Swipe** type Tinder (`gesture-handler` + `reanimated`) avec rotation de carte,
+  tampons « J'aime / Passer », boutons ❤️ / ✕, et fiche film complète (synopsis, durée,
+  genres, note TMDB, casting, réalisateur, bande-annonce YouTube en WebView).
+- **Recommandations** personnalisées par groupe (intersection des genres du groupe et
+  des préférences cumulées des membres, repli sur les films populaires TMDB).
+- **Matchs** : classement des films du groupe par taux de likes, avec reset par l'admin.
+- **Historique** : fil des votes et arrivées de membres dans tes groupes.
 
-2. Start the app
+## Stack
 
-   ```bash
-   npx expo start
-   ```
+- React Native `0.81` + **Expo SDK 54** (Expo Router, file-based routing)
+- **TypeScript**
+- **Supabase** (auth + Postgres + RLS + RPC `SECURITY DEFINER`)
+- **API TMDB** (`/movie/popular`, `/movie/{id}`, `/search/movie`, `/discover`, `/recommendations`)
+- `react-native-gesture-handler` + `react-native-reanimated` (swipe), `expo-image`,
+  `expo-linear-gradient`, `react-native-webview`
 
-In the output, you'll find options to open the app in a
+## Démarrage
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Prérequis
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- Node.js 20+
+- Un projet **Supabase** (URL + clé `anon`) avec le schéma appliqué (voir plus bas)
+- Un **jeton de lecture TMDB v4**
+
+### Installation
+
+```bash
+# 1. Installer les dépendances
+npm install
+
+# 2. Configurer les variables d'environnement
+cp .env.example .env      # puis renseigne tes propres clés (voir .env.example)
+
+# 3. Appliquer le schéma Supabase
+#    via la CLI :   supabase db push
+#    ou à la main : exécuter supabase/schema.sql puis les fichiers supabase/migrations/*
+#    dans le SQL Editor de Supabase (dans l'ordre des numéros 001 → 007)
+
+# 4. Lancer l'app
+npx expo start
+```
+
+Depuis le terminal Expo : `a` (Android), `i` (iOS), `w` (web), ou scanner le QR code
+avec **Expo Go**.
+
+### Scripts
+
+| Commande | Rôle |
+|----------|------|
+| `npm start` | Démarre le serveur de développement Expo |
+| `npm run android` / `ios` / `web` | Démarre directement sur la plateforme ciblée |
+| `npm run lint` | Lint (eslint-config-expo) |
+| `npm test` | Suite de tests Jest (`jest-expo` + Testing Library) |
+| `npm run test:wrapper` | Tests unitaires du client TMDB (runner `node:test`) |
+
+## Structure du projet
+
+Le projet suit les conventions **Expo Router** (routage par fichiers dans `app/`)
+plutôt qu'un dossier `src/`, mais respecte la même séparation des responsabilités :
+
+```
+app/            écrans & navigation (Stack + onglets), routage par fichiers
+components/     composants réutilisables (auth, swipe, groups, onboarding, ui…)
+hooks/          hooks custom (useAuth, useColorScheme…)
+lib/            accès données : Supabase (groups, votes, matches, activity…) + TMDB
+services/       préférences & profil utilisateur
+wrappers/       client TMDB typé (TMDBClient) + types TMDB
+constants/      thème, mapping des genres
+types/          types partagés
+supabase/       schéma SQL + migrations
+tests/          tests unitaires & composants
+docs/           maquette, scénario de tests E2E, doc OAuth Google
+```
+
+> ⚠️ Aucun secret n'est versionné : URL Supabase, clé `anon` et jeton TMDB sont lus
+> depuis l'environnement (`process.env.EXPO_PUBLIC_*`, voir [`.env.example`](.env.example)).
+
+## Équipe
+
+Projet réalisé **en solo** par **Keryan** (M1 React Native).
 
 ## Authentification (GH-1)
 
@@ -56,7 +126,9 @@ films populaires via `tmdb.getPopularMovies()` et affiche leurs vraies affiches
 `expo-linear-gradient` bicolores si TMDB échoue. Voile dégradé global, lockup
 MATCH·TON·FILM et accroche condensée. L'écran est volontairement en thème sombre
 (la maquette est dark-only). Le formulaire email / mot de passe (notre flux réel)
-remplace les boutons de la maquette ; « Continuer avec Google » est omis (OAuth non câblé).
+remplace les boutons de la maquette ; le bouton « Continuer avec Google » est câblé
+en OAuth Supabase (`signInWithOAuth` + `expo-web-browser`, voir
+[`docs/google-oauth.md`](docs/google-oauth.md)).
 
 ## Données (GH-2 / GH-3 / GH-4)
 
@@ -182,26 +254,36 @@ L'admin du groupe peut relancer un cycle de swipe depuis l'écran des résultats
 - Une confirmation est demandée avant suppression ; une fois les votes supprimés, le
   classement est rechargé et un nouveau cycle de swipe peut commencer.
 
-## Get a fresh project
+## Workflow de développement
 
-When you're ready, run:
+Le projet est développé avec l'assistance de **Claude Code**, encadrée par un
+workflow strict — l'IA produit du code, mais ne le merge jamais sans franchir des
+garde-fous automatisés.
 
-```bash
-npm run reset-project
-```
+### Une branche = un ticket = une PR
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Chaque fonctionnalité ou correctif vit sur sa propre branche (`feature/…`, `fix/…`,
+`docs/…`, `improve/…`) et est intégrée à `main` via une **pull request**. L'historique
+Git reflète ce découpage : les tickets `GH-1` à `GH-11` couvrent les fonctionnalités,
+puis une série de PR de correctifs et de polish (voir l'historique des PR).
 
-## Learn more
+### CI obligatoire avant merge
 
-To learn more about developing your project with Expo, look at the following resources:
+À chaque pull request vers `main`, le workflow [`/.github/workflows/ci.yml`](.github/workflows/ci.yml)
+exécute **trois étapes séquentielles** (chacune doit passer pour débloquer la suivante) :
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+1. **Lint** — `npm run lint` (eslint-config-expo)
+2. **Type-check** — `npx tsc --noEmit`
+3. **Test** — `npm test` (Jest + Testing Library)
 
-## Join the community
+Une PR qui casse le lint, les types ou un test est bloquée. C'est ce filet qui
+**encadre les contributions de l'IA** : tout dépassement de périmètre ou régression
+introduite par une génération automatique est rattrapé par la CI avant d'atteindre `main`.
 
-Join our community of developers creating universal apps.
+### Rôle de l'IA dans la boucle
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Le code de fonctionnalité est écrit à partir d'un ticket cadré, puis l'IA est
+sollicitée en fin de cycle pour les tâches répétitives — **génération des tests**,
+**documentation** et **passe de polish** — chaque sortie étant relue et validée par la
+CI et par moi avant merge. Le détail de cette collaboration (apports, dérives observées,
+analyse critique) est documenté dans le document individuel du projet.
