@@ -50,7 +50,10 @@ les correctifs dans [`supabase/migrations`](supabase/migrations). Applique-les v
 L'écran de connexion reprend la maquette *Welcome* (Claude Design), archivée dans
 [`docs/maquette/`](docs/maquette) (prototype HTML/CSS/JSX + tokens + chats d'intention) :
 fond animé de posters ([`components/auth/poster-marquee.tsx`](components/auth/poster-marquee.tsx),
-dégradés `expo-linear-gradient` + boucle `reanimated`), voile dégradé, lockup
+trois colonnes défilant en boucle `reanimated`). Au montage, le marquee récupère les
+films populaires via `tmdb.getPopularMovies()` et affiche leurs vraies affiches
+(`expo-image`, fade-in) avec le titre par-dessus ; il retombe sur des dégradés
+`expo-linear-gradient` bicolores si TMDB échoue. Voile dégradé global, lockup
 MATCH·TON·FILM et accroche condensée. L'écran est volontairement en thème sombre
 (la maquette est dark-only). Le formulaire email / mot de passe (notre flux réel)
 remplace les boutons de la maquette ; « Continuer avec Google » est omis (OAuth non câblé).
