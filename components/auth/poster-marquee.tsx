@@ -54,7 +54,7 @@ function PosterCard({ movie }: Readonly<{ movie: Movie }>) {
           source={{ uri: movie.poster }}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
-          transition={400}
+          transition={500}
         />
       ) : null}
       <View style={styles.posterSheen} />
@@ -176,6 +176,8 @@ const styles = StyleSheet.create({
     marginBottom: GAP,
     overflow: 'hidden',
     justifyContent: 'flex-end',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   posterSheen: {
     ...StyleSheet.absoluteFillObject,
