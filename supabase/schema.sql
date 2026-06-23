@@ -147,20 +147,24 @@ alter table group_members enable row level security;
 
 
 -- profiles : accès à son propre profil uniquement
+drop policy if exists "profiles: lecture publique" on profiles;
 create policy "profiles: lecture publique"
   on profiles for select
   using (true);
 
+drop policy if exists "profiles: modification son propre profil" on profiles;
 create policy "profiles: modification son propre profil"
   on profiles for update
   using (auth.uid() = id);
 
+drop policy if exists "profiles: création de son propre profil" on profiles;
 create policy "profiles: création de son propre profil"
   on profiles for insert
   with check (auth.uid() = id);
 
 
 -- user_genres : accès à ses propres préférences
+drop policy if exists "user_genres: CRUD ses propres genres" on user_genres;
 create policy "user_genres: CRUD ses propres genres"
   on user_genres for all
   using (auth.uid() = user_id)
@@ -168,6 +172,7 @@ create policy "user_genres: CRUD ses propres genres"
 
 
 -- user_films : accès à ses propres préférences
+drop policy if exists "user_films: CRUD ses propres films" on user_films;
 create policy "user_films: CRUD ses propres films"
   on user_films for all
   using (auth.uid() = user_id)
@@ -175,32 +180,39 @@ create policy "user_films: CRUD ses propres films"
 
 
 -- groups : visible par les membres, modifiable par l'admin
+drop policy if exists "groups: lecture par les membres" on groups;
 create policy "groups: lecture par les membres"
   on groups for select
   using (is_group_member(id));
 
+drop policy if exists "groups: création authentifiée" on groups;
 create policy "groups: création authentifiée"
   on groups for insert
   with check (auth.uid() = created_by);
 
+drop policy if exists "groups: modification par l'admin" on groups;
 create policy "groups: modification par l'admin"
   on groups for update
   using (is_group_admin(id));
 
+drop policy if exists "groups: suppression par l'admin" on groups;
 create policy "groups: suppression par l'admin"
   on groups for delete
   using (is_group_admin(id));
 
 
 -- group_members : visible par tous les membres du groupe
+drop policy if exists "group_members: lecture par les membres" on group_members;
 create policy "group_members: lecture par les membres"
   on group_members for select
   using (is_group_member(group_id));
 
+drop policy if exists "group_members: rejoindre un groupe" on group_members;
 create policy "group_members: rejoindre un groupe"
   on group_members for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "group_members: quitter un groupe" on group_members;
 create policy "group_members: quitter un groupe"
   on group_members for delete
   using (auth.uid() = user_id);
@@ -278,10 +290,12 @@ create table if not exists votes (
 
 alter table votes enable row level security;
 
+drop policy if exists "votes: lecture par les membres du groupe" on votes;
 create policy "votes: lecture par les membres du groupe"
   on votes for select
   using (is_group_member(group_id));
 
+drop policy if exists "votes: CRUD ses propres votes" on votes;
 create policy "votes: CRUD ses propres votes"
   on votes for all
   using (auth.uid() = user_id)
