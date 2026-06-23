@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
 
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Easing,
@@ -11,9 +12,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-/** Palettes de posters (deux teintes par film) — reprises de la maquette. */
-type Movie = { title: string; p1: string; p2: string };
+import { tmdb } from '@/lib/tmdb';
 
+/** Poster du marquee : une affiche TMDB si disponible, sinon un dégradé bicolore. */
+type Movie = { title: string; p1: string; p2: string; poster?: string };
+
+/** Palettes de repli (deux teintes par film) — reprises de la maquette. */
 const MOVIES: Movie[] = [
   { title: 'Dune : Deuxième Partie', p1: '#b5651d', p2: '#2b1606' },
   { title: 'Parasite', p1: '#3a4a3f', p2: '#0c1410' },
@@ -33,6 +37,7 @@ const MOVIES: Movie[] = [
   { title: 'Spider-Man : Spider-Verse', p1: '#d11e63', p2: '#15103f' },
 ];
 
+const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
 const POSTER_H = 150;
 const GAP = 12;
 
@@ -44,7 +49,20 @@ function PosterCard({ movie }: Readonly<{ movie: Movie }>) {
       end={{ x: 0.85, y: 1 }}
       style={styles.poster}
     >
+      {movie.poster ? (
+        <Image
+          source={{ uri: movie.poster }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={400}
+        />
+      ) : null}
       <View style={styles.posterSheen} />
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.78)']}
+        style={styles.posterScrim}
+        pointerEvents="none"
+      />
       <Text style={styles.posterTitle} numberOfLines={2}>
         {movie.title}
       </Text>
@@ -87,9 +105,33 @@ function MarqueeColumn({
 
 /** Fond animé : trois colonnes de posters défilant en sens alternés, inclinées. */
 export default function PosterMarquee() {
-  const colA = MOVIES.filter((_, i) => i % 3 === 0);
-  const colB = MOVIES.filter((_, i) => i % 3 === 1);
-  const colC = MOVIES.filter((_, i) => i % 3 === 2);
+  const [movies, setMovies] = useState<Movie[]>(MOVIES);
+
+  useEffect(() => {
+    let cancelled = false;
+    tmdb
+      .getPopularMovies(18)
+      .then((results) => {
+        if (cancelled) return;
+        const withPosters = results
+          .filter((m) => m.poster_path)
+          .map((m, i) => ({
+            title: m.title,
+            poster: `${POSTER_BASE}${m.poster_path}`,
+            p1: MOVIES[i % MOVIES.length].p1,
+            p2: MOVIES[i % MOVIES.length].p2,
+          }));
+        if (withPosters.length >= 9) setMovies(withPosters);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const colA = movies.filter((_, i) => i % 3 === 0);
+  const colB = movies.filter((_, i) => i % 3 === 1);
+  const colC = movies.filter((_, i) => i % 3 === 2);
 
   return (
     <View
@@ -138,6 +180,13 @@ const styles = StyleSheet.create({
   posterSheen: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  posterScrim: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '62%',
   },
   posterTitle: {
     padding: 11,
