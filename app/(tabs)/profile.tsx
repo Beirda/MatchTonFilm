@@ -1,23 +1,18 @@
 import { StyleSheet, View } from 'react-native';
 
-import { router } from 'expo-router';
-
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AppHeader from '@/components/app-header';
-import GroupsList from '@/components/groups';
+import ProfileTab from '@/components/groups/profile-tab';
 
-export default function GroupsScreen() {
+export default function ProfileScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <AppHeader />
-      <GroupsList
-        onCreatePress={() => router.push('/groups/create')}
-        onJoinPress={() => router.push('/groups/join')}
-      />
+      <ProfileTab />
     </View>
   );
 }

@@ -1,40 +1,51 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarStyle: { display: 'none' },
+        tabBarActiveTintColor: colors.red,
+        tabBarInactiveTintColor: colors.textFaint,
+        tabBarStyle: {
+          backgroundColor: colors.background,
+          borderTopColor: colors.surfaceBorder,
+        },
       }}>
       <Tabs.Screen
         name="index"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="home"
         options={{
           title: 'Groupes',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.2.fill" color={color} />,
+          tabBarIcon: ({ color, size }) => <MaterialIcons name="home" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="history"
         options={{
-          title: 'Explorer',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="magnifyingglass" color={color} />,
+          title: 'Historique',
+          tabBarIcon: ({ color, size }) => <MaterialIcons name="history" size={size} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profil',
+          tabBarIcon: ({ color, size }) => <MaterialIcons name="person" size={size} color={color} />,
+        }}
+      />
+      {/* Écran de démonstration conservé hors de la barre d'onglets. */}
+      <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
   );
 }

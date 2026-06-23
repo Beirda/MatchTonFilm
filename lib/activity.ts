@@ -2,13 +2,13 @@ import { supabase } from '@/lib/supabase';
 import { tmdb } from '@/lib/tmdb';
 
 const EVENT_LIMIT = 12;
-const LIKES_LIMIT = 15;
+const VOTES_LIMIT = 15;
 
 export type ActivityEvent = {
   id: string;
   text: string;
   sub: string;
-  icon: 'favorite' | 'group';
+  icon: 'favorite' | 'group' | 'thumb-down';
   date: string;
 };
 
@@ -19,9 +19,10 @@ type JoinRow = {
   profiles: { display_name: string | null } | null;
 };
 
-type LikeRow = {
+type VoteRow = {
   group_id: string;
   movie_id: number;
+  vote: 'like' | 'dislike';
   created_at: string;
   profiles: { display_name: string | null } | null;
 };
@@ -45,8 +46,8 @@ function firstName(displayName: string | null): string {
 }
 
 /**
- * Fil d'activité réel de l'utilisateur : arrivées de membres et films aimés
- * dans ses groupes, triés du plus récent au plus ancien.
+ * Fil d'activité réel de l'utilisateur : arrivées de membres et films swipés
+ * (aimés comme passés) dans ses groupes, triés du plus récent au plus ancien.
  */
 export async function fetchUserActivity(): Promise<ActivityEvent[]> {
   const { data: auth } = await supabase.auth.getUser();
@@ -60,7 +61,7 @@ export async function fetchUserActivity(): Promise<ActivityEvent[]> {
   const ids = ((memberships ?? []) as { group_id: string }[]).map(m => m.group_id);
   if (ids.length === 0) return [];
 
-  const [groupsRes, joinsRes, likesRes] = await Promise.all([
+  const [groupsRes, joinsRes, votesRes] = await Promise.all([
     supabase.from('groups').select('id, name').in('id', ids),
     supabase
       .from('group_members')
@@ -68,21 +69,20 @@ export async function fetchUserActivity(): Promise<ActivityEvent[]> {
       .in('group_id', ids),
     supabase
       .from('votes')
-      .select('group_id, movie_id, created_at, profiles(display_name)')
+      .select('group_id, movie_id, vote, created_at, profiles(display_name)')
       .in('group_id', ids)
-      .eq('vote', 'like')
       .order('created_at', { ascending: false })
-      .limit(LIKES_LIMIT),
+      .limit(VOTES_LIMIT),
   ]);
 
   const groupNames = new Map(
     ((groupsRes.data ?? []) as { id: string; name: string }[]).map(g => [g.id, g.name]),
   );
 
-  const likes = (likesRes.data ?? []) as unknown as LikeRow[];
+  const votes = (votesRes.data ?? []) as unknown as VoteRow[];
   const movieTitles = new Map<number, string>();
   await Promise.all(
-    [...new Set(likes.map(l => l.movie_id))].map(async movieId => {
+    [...new Set(votes.map(v => v.movie_id))].map(async movieId => {
       try {
         const movie = await tmdb.getMovie(movieId);
         movieTitles.set(movieId, movie.title);
@@ -106,16 +106,17 @@ export async function fetchUserActivity(): Promise<ActivityEvent[]> {
     });
   }
 
-  for (const like of likes) {
-    const groupName = groupNames.get(like.group_id);
-    const title = movieTitles.get(like.movie_id);
+  for (const vote of votes) {
+    const groupName = groupNames.get(vote.group_id);
+    const title = movieTitles.get(vote.movie_id);
     if (!groupName || !title) continue;
+    const liked = vote.vote === 'like';
     events.push({
-      id: `like-${like.group_id}-${like.movie_id}-${like.created_at}`,
-      text: `${firstName(like.profiles?.display_name ?? null)} a aimé ${title}`,
-      sub: `${groupName} · ${relativeTime(like.created_at)}`,
-      icon: 'favorite',
-      date: like.created_at,
+      id: `vote-${vote.group_id}-${vote.movie_id}-${vote.created_at}`,
+      text: `${firstName(vote.profiles?.display_name ?? null)} a ${liked ? 'aimé' : 'passé'} ${title}`,
+      sub: `${groupName} · ${relativeTime(vote.created_at)}`,
+      icon: liked ? 'favorite' : 'thumb-down',
+      date: vote.created_at,
     });
   }
 

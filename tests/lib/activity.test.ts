@@ -2,7 +2,7 @@ const mockGetUser = jest.fn();
 const mockMemberships = jest.fn();
 const mockJoins = jest.fn();
 const mockGroupsList = jest.fn();
-const mockLikes = jest.fn();
+const mockVotes = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
@@ -15,9 +15,7 @@ jest.mock('@/lib/supabase', () => ({
         if (table === 'votes') {
           return {
             in: () => ({
-              eq: () => ({
-                order: () => ({ limit: () => mockLikes() }),
-              }),
+              order: () => ({ limit: () => mockVotes() }),
             }),
           };
         }
@@ -43,7 +41,7 @@ describe('fetchUserActivity', () => {
     mockMemberships.mockResolvedValue({ data: [{ group_id: 'g1' }], error: null });
     mockGroupsList.mockResolvedValue({ data: [{ id: 'g1', name: 'Ciné Club' }], error: null });
     mockJoins.mockResolvedValue({ data: [], error: null });
-    mockLikes.mockResolvedValue({ data: [], error: null });
+    mockVotes.mockResolvedValue({ data: [], error: null });
   });
 
   it('renvoie [] sans utilisateur connecté', async () => {
@@ -70,11 +68,12 @@ describe('fetchUserActivity', () => {
       ],
       error: null,
     });
-    mockLikes.mockResolvedValue({
+    mockVotes.mockResolvedValue({
       data: [
         {
           group_id: 'g1',
           movie_id: 550,
+          vote: 'like',
           created_at: '2026-06-11T09:00:00Z',
           profiles: { display_name: 'Léa' },
         },
@@ -93,12 +92,35 @@ describe('fetchUserActivity', () => {
     expect(events[1].icon).toBe('group');
   });
 
-  it('ignore les votes dont le film TMDB est indisponible', async () => {
-    mockLikes.mockResolvedValue({
+  it('distingue un film passé (dislike) d\'un film aimé', async () => {
+    mockVotes.mockResolvedValue({
       data: [
         {
           group_id: 'g1',
           movie_id: 550,
+          vote: 'dislike',
+          created_at: '2026-06-11T09:00:00Z',
+          profiles: { display_name: 'Léa' },
+        },
+      ],
+      error: null,
+    });
+    mockGetMovie.mockResolvedValue({ id: 550, title: 'Fight Club' });
+
+    const events = await fetchUserActivity();
+
+    expect(events).toHaveLength(1);
+    expect(events[0].text).toBe('Léa a passé Fight Club');
+    expect(events[0].icon).toBe('thumb-down');
+  });
+
+  it('ignore les votes dont le film TMDB est indisponible', async () => {
+    mockVotes.mockResolvedValue({
+      data: [
+        {
+          group_id: 'g1',
+          movie_id: 550,
+          vote: 'like',
           created_at: '2026-06-11T09:00:00Z',
           profiles: { display_name: 'Léa' },
         },
