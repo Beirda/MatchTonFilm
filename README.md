@@ -6,6 +6,8 @@ le film qui met tout le monde d'accord — « Arrête de débattre. Swipez. »
 
 Projet d'évaluation finale **M1 React Native — SUP de VINCI** (Sujet 1 : MatchTonFilm).
 
+**Dépôt** : https://github.com/Elessiah/HOUSSIN_CineMatch
+
 ## Fonctionnalités
 
 - **Authentification** Supabase (email + mot de passe, + « Continuer avec Google »).
