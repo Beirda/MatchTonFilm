@@ -43,7 +43,6 @@ export default function GroupsList({ onCreatePress, onJoinPress }: Props) {
   useFocusEffect(
     useCallback(() => {
       loadGroups();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []),
   );
 
